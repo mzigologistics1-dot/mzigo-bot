@@ -65,3 +65,4 @@ def add_truck(from_town: str = Form(...), to_town: str = Form(...), truck_type: 
         except:
             pass
     return HTMLResponse('<script>window.location.href="/";</script>')
+        
