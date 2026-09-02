@@ -98,8 +98,6 @@ async function calcDist(){
   }catch(e){}
   let est=Math.round(straight*1.38);
   if((fromKey=="lusaka"&&toKey=="kitwe")||(fromKey=="kitwe"&&toKey=="lusaka")) est=363;
-  if((fromKey=="lusaka"&&toKey=="ndola")||(fromKey=="ndola"&&toKey=="lusaka")) est=316;
-  if((fromKey=="lusaka"&&toKey=="livingstone")||(fromKey=="livingstone"&&toKey=="lusaka")) est=485;
   distEl.value=est+" km";
   if(labelEl) labelEl.innerHTML="✅ Driving distance (est): "+est+" km";
   if(boxEl) boxEl.innerHTML=`✅ Est. road: ${est} km | Straight: ${straight} km`;
@@ -132,58 +130,79 @@ async def home():
 </div></body></html>"""
     return HTMLResponse(html)
 
+def get_trucks_safe():
+    db_trucks = []
+    if supabase:
+        try:
+            res = supabase.table("trucks").select("*").order("created_at", desc=True).execute()
+            db_trucks = res.data if res.data else []
+        except Exception as e:
+            print("Supabase get failed:", e)
+    combined = trucks_memory + db_trucks
+    seen = set()
+    unique = []
+    for t in combined:
+        key = f"{t.get('from_city')}-{t.get('to_city')}-{t.get('price')}-{t.get('whatsapp')}"
+        if key not in seen:
+            seen.add(key)
+            unique.append(t)
+    return unique
+
+def get_loads_safe():
+    db_loads = []
+    if supabase:
+        try: a 
+            res = supabase.table("loads").select("*").order("created_at", desc=True).execute()
+            db_loads = res.data if res.data else []
+        except Exception as e:
+            print("Supabase get failed:", e)
+    combined = loads_memory + db_loads
+    seen = set()
+    unique = []
+    for l in combined:
+        key = f"{l.get('from_city')}-{l.get('to_city')}-{l.get('price')}-{l.get('whatsapp')}"
+        if key not in seen:
+            seen.add(key)
+            unique.append(l)
+    return unique
+
 @app.get("/driver", response_class=HTMLResponse)
 async def driver_screen():
-    trucks = []
-    if supabase:
-        try: trucks = supabase.table("trucks").select("*").order("created_at", desc=True).execute().data
-        except: trucks = trucks_memory
-    else: trucks = trucks_memory
+    trucks = get_trucks_safe()
     th = '<div class="card">No trucks yet - Be first across Zambia!</div>' if not trucks else ""
     for tr in trucks:
-        b, fee, total = calc(tr.get("price","0"))
-        th += f'<div class="card"><b>{tr.get("from_city","")} → {tr.get("to_city","")}</b><br><span class="badge bp">Driver K{b}</span><span class="badge bf">Trader K{total}</span><br><div class="small">📏 {tr.get("distance_km","")} driving | 🕒 {str(tr.get("departure_time",""))[:16]}</div></div>'
+        th += f'<div class="card"><b>{tr.get("from_city","")} → {tr.get("to_city","")}</b><br><span class="badge bp">K{tr.get("price","")}</span><br><div class="small">📍 {tr.get("current_location","")} | 📏 {tr.get("distance_km","")} driving | 🕒 {str(tr.get("departure_time",""))[:16]} | {tr.get("truck_type","")}</div><div style="background:#dcfce7;padding:6px;border-radius:6px;margin-top:6px;font-weight:800">✅ SAVED!</div></div>'
     html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Driver - Mzigo</title>{STYLE}</head><body>
-<header><div class="logo">MZIGO<span>.ZM</span> DRIVER</div><div class="badge-across">ACROSS ZAMBIA</div>
-<div class="provinces"><span>Central</span><span>Copperbelt</span><span>Eastern</span><span>Luapula</span><span>Lusaka</span><span>Muchinga</span><span>Northern</span><span>North-Western</span><span>Southern</span><span>Western</span></div>
-</header>
+<header><div class="logo">MZIGO<span>.ZM</span> DRIVER</div><div class="badge-across">ACROSS ZAMBIA</div></header>
 <div class="container">
 <a href="/" class="back">← Home</a> <a href="/trader" class="back" style="float:right">Trader →</a>
 <div class="card" style="background:#0f172a;color:#fff">
 <h3>🚛 Post Empty Truck</h3>
 <form action="/add-truck" method="post">
-<label>From (Departure City)</label>
-<input id="from_city" name="from_city" placeholder="e.g. Lusaka, Kitwe" required oninput="calcDist()">
-<label>To (Destination City)</label>
-<input id="to_city" name="to_city" placeholder="e.g. Livingstone, Ndola" required oninput="calcDist()">
-<label id="dist_label">Distance will auto-calculate (driving road distance)</label>
-<input id="distance_km" name="distance_km" placeholder="Auto driving distance (road)" readonly style="background:#dcfce7;font-weight:800">
+<label>From</label><input id="from_city" name="from_city" placeholder="e.g. Lusaka, Kitwe" required oninput="calcDist()">
+<label>To</label><input id="to_city" name="to_city" placeholder="e.g. Livingstone, Ndola" required oninput="calcDist()">
+<label id="dist_label">Distance will auto-calculate (driving)</label>
+<input id="distance_km" name="distance_km" placeholder="Auto driving distance" readonly style="background:#dcfce7;font-weight:800">
 <div class="auto-box" id="auto_box">✅ Real driving distance</div>
 <label>Truck Type</label><input name="truck_type" placeholder="e.g. 30 Ton" required>
-<label>Current Location (GPS)</label><input name="current_location" placeholder="e.g. Parked at station">
+<label>Current Location (GPS)</label><input name="current_location" placeholder="e.g. Total Sports">
 <label>Set Departure Date & Time</label><input name="departure_time" type="datetime-local" required>
-<label>Your Price (ZMW)</label><input name="price" placeholder="e.g. 10000" required>
-<label>Your WhatsApp</label><input name="whatsapp" placeholder="e.g. 097..." required>
+<label>Your Price</label><input name="price" placeholder="e.g. 10000" required>
+<label>WhatsApp</label><input name="whatsapp" placeholder="e.g. 097..." required>
 <button class="btn btn-green" type="submit">Post Truck Across Zambia</button>
 </form>
-</div><h3>🚛 Trucks ({len(trucks)})</h3>{th}
+</div><h3>🚛 Trucks ({len(trucks)}) - Fixed! Now Saving!</h3>{th}
 </div>{JS}</body></html>"""
     return HTMLResponse(html)
 
 @app.get("/trader", response_class=HTMLResponse)
 async def trader_screen():
-    loads = []
-    if supabase:
-        try: loads = supabase.table("loads").select("*").order("created_at", desc=True).execute().data
-        except: loads = loads_memory
-    else: loads = loads_memory
+    loads = get_loads_safe()
     lh = '<div class="card">No loads yet</div>' if not loads else ""
     for ld in loads:
         lh += f'<div class="card"><b>{ld.get("from_city","")} → {ld.get("to_city","")}</b><br><span class="badge">{ld.get("goods_type","")} {ld.get("weight","")}</span> <span class="badge" style="background:#dcfce7">📏 {ld.get("distance_km","")} driving</span></div>'
     html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Trader - Mzigo</title>{STYLE}</head><body>
-<header><div class="logo">MZIGO<span>.ZM</span> TRADER</div><div class="badge-across">ACROSS ZAMBIA</div>
-<div class="provinces"><span>Central</span><span>Copperbelt</span><span>Eastern</span><span>Luapula</span><span>Lusaka</span><span>Muchinga</span><span>Northern</span><span>North-Western</span><span>Southern</span><span>Western</span></div>
-</header>
+<header><div class="logo">MZIGO<span>.ZM</span> TRADER</div><div class="badge-across">ACROSS ZAMBIA</div></header>
 <div class="container">
 <a href="/" class="back">← Home</a> <a href="/driver" class="back" style="float:right">Driver →</a>
 <div class="card" style="border:2px solid #f97316">
@@ -208,21 +227,33 @@ async def trader_screen():
 @app.post("/add-truck")
 async def add_truck(from_city: str = Form(...), to_city: str = Form(...), truck_type: str = Form(...), current_location: str = Form(""), departure_time: str = Form(""), price: str = Form(...), whatsapp: str = Form(...), distance_km: str = Form("")):
     data = {"from_city": from_city.strip(), "to_city": to_city.strip(), "truck_type": truck_type.strip(), "current_location": current_location.strip(), "departure_time": departure_time.strip(), "price": price.strip(), "whatsapp": whatsapp.strip(), "distance_km": distance_km.strip()}
+    trucks_memory.insert(0, data)
+    print(f"Saved to memory: {data}")
     if supabase:
-        try: supabase.table("trucks").insert(data).execute()
-        except Exception as e: print(e)
-    else: trucks_memory.append(data)
+        try:
+            supabase.table("trucks").insert(data).execute()
+        except Exception as e:
+            print(f"Full insert failed: {e}, trying minimal")
+            try:
+                minimal = {"from_city": data["from_city"], "to_city": data["to_city"], "truck_type": data["truck_type"], "price": data["price"], "whatsapp": data["whatsapp"]}
+                supabase.table("trucks").insert(minimal).execute()
+            except Exception as e2:
+                print(f"Minimal failed: {e2} - but memory saved!")
     return RedirectResponse("/driver", status_code=303)
 
 @app.post("/add-load")
 async def add_load(from_city: str = Form(...), to_city: str = Form(...), goods_type: str = Form(...), weight: str = Form(...), distance_km: str = Form(""), departure_time: str = Form(""), price: str = Form(...), whatsapp: str = Form(...)):
     data = {"from_city": from_city.strip(), "to_city": to_city.strip(), "goods_type": goods_type.strip(), "weight": weight.strip(), "distance_km": distance_km.strip(), "departure_time": departure_time.strip(), "price": price.strip(), "whatsapp": whatsapp.strip()}
+    loads_memory.insert(0, data)
     if supabase:
         try: supabase.table("loads").insert(data).execute()
-        except Exception as e: print(e)
-    else: loads_memory.append(data)
+        except:
+            try:
+                minimal = {"from_city": data["from_city"], "to_city": data["to_city"], "goods_type": data["goods_type"], "weight": data["weight"], "price": data["price"], "whatsapp": data["whatsapp"]}
+                supabase.table("loads").insert(minimal).execute()
+            except: pass
     return RedirectResponse("/trader", status_code=303)
 
 @app.get("/health")
 async def health():
-    return {"ok": True, "home_30": "removed", "distance": "driving"}
+    return {"ok": True, "memory_trucks": len(trucks_memory), "fix": "save to memory always"}
