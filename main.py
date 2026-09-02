@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse
 import uuid
+import os
 
 app = FastAPI()
 trucks_memory = []
@@ -8,6 +9,13 @@ loads_memory = []
 
 MTN = "0964343865"
 AIRTEL = "0976166422"
+MTN_FULL = "260964343865"
+AIRTEL_FULL = "260976166422"
+
+# Twilio config (optional - works without it too)
+TWILIO_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_WHATSAPP = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886") # Twilio sandbox default
 
 STYLE = """<style>
 *{box-sizing:border-box}body{margin:0;font-family:sans-serif;background:#f8fafc;color:#0f172a}
@@ -22,6 +30,7 @@ header{background:#0f172a;color:#fff;padding:18px 16px;text-align:center}
 .btn-green{background:#22c55e;color:#000}
 .btn-dark{background:#0f172a;color:#fff}
 .btn-orange{background:#f97316;color:#fff}
+.btn-blue{background:#3b82f6;color:#fff}
 .btn-red{background:#ef4444;color:#fff;padding:8px 14px;font-size:12px;border-radius:20px;display:inline-block;width:auto;margin-top:8px;border:none;cursor:pointer}
 input,select{width:100%;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;margin-top:6px;background:#f8fafc;font-size:14px}
 label{font-size:11px;font-weight:800;color:#334155;margin-top:10px;display:block;text-transform:uppercase}
@@ -36,6 +45,7 @@ label{font-size:11px;font-weight:800;color:#334155;margin-top:10px;display:block
 .delete-btn{position:absolute;top:10px;right:10px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:28px;height:28px;font-weight:900;cursor:pointer}
 .footer-contact{background:#0f172a;color:#fff;padding:14px;text-align:center;margin-top:20px}
 .footer-contact b{color:#22c55e}
+.bot-msg{background:#dcfce7;border-left:4px solid #22c55e;padding:10px;margin:8px 0;border-radius:8px;font-size:13px}
 </style>"""
 
 JS = """<script>
@@ -49,11 +59,53 @@ function onPriceManual(){const p=document.getElementById('price');if(p)p.dataset
 function confirmDelete(id){if(confirm('Are you sure you want to delete this?')){window.location.href='/delete-item/'+id;}}
 </script>"""
 
+def get_bot_menu():
+    trucks_text = ""
+    if trucks_memory:
+        for t in trucks_memory[:3]:
+            trucks_text += f"🚛 {t.get('from_city')} → {t.get('to_city')} | {t.get('distance_km')} | {t.get('truck_type')} | K{t.get('price')}\n"
+    else:
+        trucks_text = "No trucks available now.\n"
+
+    return f"""*MZIGO.ZM* - Across Zambia 🚚
+ACROSS ZAMBIA - 10 Provinces
+
+*AVAILABLE TRUCKS:*
+{trucks_text}
+*WEIGHT PRICING (Platinum style):*
+K25/kg Budget
+K30/kg Standard ⭐
+K35/kg Express
+K50/kg Urgent
+
+*PAYMENT:*
+MTN MoMo: 0964343865
+Airtel Money: 0976166422
+
+*MENU:*
+1 - List all trucks
+2 - List loads
+3 - Post truck (Driver)
+4 - Post load (Trader)
+5 - Payment info
+6 - Help
+
+Reply with number or type:
+TRUCK Kitwe Lusaka
+LOAD Lusaka Ndola 1000kg
+
+Visit: https://mzigo-bot.onrender.com
+"""
+
 @app.get("/", response_class=HTMLResponse)
 async def home():
     return HTMLResponse("""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mzigo Zambia</title>""" + STYLE + """</head><body>
 <header><div class="logo">MZIGO<span>.ZM</span></div><div style="font-size:12px;opacity:.8">Zambia's smart logistics platform - No truck returns empty</div><div class="badge-across">ACROSS ZAMBIA</div><div class="provinces"><span>Central</span><span>Copperbelt</span><span>Eastern</span><span>Luapula</span><span>Lusaka</span><span>Muchinga</span><span>Northern</span><span>North-Western</span><span>Southern</span><span>Western</span></div></header>
-<div class="container"><div class="card" style="background:#0f172a;color:#fff"><h2 style="margin:0">🚛 I'm a Driver</h2><p style="opacity:.85;font-size:13px">Have empty truck? Post it and get loads across Zambia.</p><a href="/driver" class="btn btn-green">Enter as Driver →</a></div><div class="card" style="border:2px solid #f97316"><h2 style="margin:0">📦 I'm a Trader</h2><p class="small">Need a truck for your goods? Post your load.</p><a href="/trader" class="btn btn-dark">Enter as Trader →</a></div></div><div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422</div></body></html>""")
+<div class="container">
+<div class="card" style="background:#0f172a;color:#fff"><h2 style="margin:0">🚛 I'm a Driver</h2><p style="opacity:.85;font-size:13px">Have empty truck? Post it and get loads across Zambia.</p><a href="/driver" class="btn btn-green">Enter as Driver →</a></div>
+<div class="card" style="border:2px solid #f97316"><h2 style="margin:0">📦 I'm a Trader</h2><p class="small">Need a truck for your goods? Post your load. Weight-based K25-35/kg</p><a href="/trader" class="btn btn-dark">Enter as Trader →</a></div>
+<div class="card" style="background:#dcfce7;border:2px solid #22c55e"><h3 style="margin:0">🤖 WhatsApp Bot Active</h3><p class="small">Auto-replies on WhatsApp with trucks, payments, weight pricing</p><div class="bot-msg">User: "Truck?"<br>Bot: "🚛 Kitwe → Lusaka 362km | K10000 | Pay MTN 0964343865 or Airtel 0976166422"</div><a href="/whatsapp-bot" class="btn btn-green">View Bot Setup →</a><a href="/test-bot" class="btn btn-blue">Test Bot Reply</a></div>
+</div><div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422<br>WhatsApp Bot Active</div></body></html>""")
 
 @app.get("/driver", response_class=HTMLResponse)
 async def driver_screen():
@@ -112,25 +164,69 @@ async def trader_screen():
 <button class="btn btn-orange" type="submit">Post Load</button>
 </form></div><h3>📦 Available Loads (""" + str(len(loads_memory)) + """)</h3>""" + lh + """</div><div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422</div>""" + JS + """</body></html>""")
 
-@app.get("/delete-item/{item_id}")
-async def delete_item(item_id: str):
-    global trucks_memory, loads_memory
-    trucks_memory = [t for t in trucks_memory if str(t.get('local_id'))!= str(item_id)]
-    loads_memory = [l for l in loads_memory if str(l.get('local_id'))!= str(item_id)]
-    return RedirectResponse("/driver", status_code=303)
+@app.get("/whatsapp-bot", response_class=HTMLResponse)
+async def whatsapp_bot_page():
+    return HTMLResponse("""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>WhatsApp Bot</title>""" + STYLE + """</head><body>
+<header><div class="logo">MZIGO<span>.ZM</span> WHATSAPP BOT</div><div class="badge-across">BOT ACTIVE</div><div class="provinces"><span>Central</span><span>Copperbelt</span><span>Eastern</span><span>Luapula</span><span>Lusaka</span><span>Muchinga</span><span>Northern</span><span>North-Western</span><span>Southern</span><span>Western</span></div></header>
+<div class="container">
+<a href="/" class="back">← Home</a>
+<div class="card">
+<h3>🤖 WhatsApp Bot - How It Works</h3>
+<div class="bot-msg">
+<b>User sends:</b> "Truck?" or "1"<br>
+<b>Bot replies:</b><br>
+🚛 Kitwe → Lusaka | 362 km driving | 50 ton | K10000<br>
+💰 Pay: MTN 0964343865 | Airtel 0976166422<br>
+📏 Weight: K30/kg Platinum style
+</div>
 
-@app.post("/add-truck")
-async def add_truck(from_city: str = Form(...), to_city: str = Form(...), truck_type: str = Form(...), current_location: str = Form(""), departure_time: str = Form(""), price: str = Form(...), whatsapp: str = Form(...), distance_km: str = Form("")):
-    data = {"local_id": str(uuid.uuid4())[:8], "from_city": from_city.strip(), "to_city": to_city.strip(), "truck_type": truck_type.strip(), "current_location": current_location.strip(), "departure_time": departure_time.strip(), "price": price.strip(), "whatsapp": whatsapp.strip(), "distance_km": distance_km.strip()}
-    trucks_memory.insert(0, data)
-    return RedirectResponse("/driver", status_code=303)
+<h4>Setup (2 minutes):</h4>
+<p class="small"><b>Option 1 - Works NOW (no setup):</b><br>
+Your site already has wa.me links. Clicking "WhatsApp MTN" opens WhatsApp with message:<br>
+<code>https://wa.me/260964343865?text=Truck Kitwe to Lusaka 362km. Pay MTN 0964343865 or Airtel 0976166422</code><br>
+This is the bot! User clicks and you get WhatsApp message.</p>
 
-@app.post("/add-load")
-async def add_load(from_city: str = Form(...), to_city: str = Form(...), goods_type: str = Form(...), weight: str = Form(...), distance_km: str = Form(""), departure_time: str = Form(""), price: str = Form(...), whatsapp: str = Form(...), rate_per_kg: str = Form("30")):
-    data = {"local_id": str(uuid.uuid4())[:8], "from_city": from_city.strip(), "to_city": to_city.strip(), "goods_type": goods_type.strip(), "weight": weight.strip(), "distance_km": distance_km.strip(), "departure_time": departure_time.strip(), "price": price.strip(), "whatsapp": whatsapp.strip(), "rate_per_kg": rate_per_kg.strip()}
-    loads_memory.insert(0, data)
-    return RedirectResponse("/trader", status_code=303)
+<p class="small"><b>Option 2 - Auto Bot (Twilio - Recommended):</b><br>
+1. Go to https://www.twilio.com/try-twilio<br>
+2. Get free WhatsApp sandbox: Send "join" to WhatsApp number they give<br>
+3. In Twilio console → Messaging → WhatsApp Sandbox → Set webhook to:<br>
+<code>https://mzigo-bot.onrender.com/whatsapp-webhook</code><br>
+4. Set ENV in Render:<br>
+TWILIO_ACCOUNT_SID=your_sid<br>
+TWILIO_AUTH_TOKEN=your_token<br>
+TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886<br>
+5. Now when someone WhatsApps your Twilio number, bot auto-replies with trucks!</p>
 
-@app.get("/health")
-async def health():
-    return {"ok": True}
+<div class="card" style="background:#fff8ed">
+<b>Bot Commands:</b><br>
+• "truck" or "1" = List trucks<br>
+• "load" or "2" = List loads<br>
+• "pay" or "5" = Payment MTN 0964343865 | Airtel 0976166422<br>
+• "price" = Weight pricing K25-35/kg<br>
+• "help" or "6" = Menu
+</div>
+
+<a href="/test-bot?msg=truck" class="btn btn-green">Test Bot: Send "truck"</a>
+<a href="/test-bot?msg=pay" class="btn btn-blue">Test Bot: Payment Info</a>
+<a href="/driver" class="btn btn-dark">Go to Driver Screen</a>
+</div>
+</div>
+<div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422 | Bot Webhook: /whatsapp-webhook</div>
+</body></html>""")
+
+@app.get("/test-bot", response_class=HTMLResponse)
+async def test_bot(msg: str = "truck"):
+    reply = handle_whatsapp_message(msg)
+    return HTMLResponse("""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bot Test</title>""" + STYLE + """</head><body>
+<header><div class="logo">MZIGO<span>.ZM</span> BOT TEST</div></header>
+<div class="container"><a href="/whatsapp-bot" class="back">← Bot Setup</a>
+<div class="card"><h3>🤖 Bot Test</h3><p class="small">You sent: <b>""" + msg + """</b></p><div class="bot-msg" style="white-space:pre-wrap">""" + reply + """</div>
+<form action="/test-bot" method="get" style="margin-top:12px"><input name="msg" placeholder="Type truck, pay, help..." value=\"""" + msg + """\"><button class="btn btn-green" type="submit">Send to Bot</button></form>
+</div></div></body></html>""")
+
+def handle_whatsapp_message(incoming_msg: str) -> str:
+    msg = incoming_msg.lower().strip()
+
+    if msg in ["1", "truck", "trucks", "available", "truck?"]:
+        if not trucks_memory:
+            return "🚛 *No trucks available now.*\nBe first to post at https://mzigo-bot.onrender.com/driver\n\n💰 Payment: MTN 0964343865 | Airtel 0976
