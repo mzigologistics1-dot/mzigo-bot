@@ -9,13 +9,6 @@ loads_memory = []
 
 MTN = "0964343865"
 AIRTEL = "0976166422"
-MTN_FULL = "260964343865"
-AIRTEL_FULL = "260976166422"
-
-# Twilio config (optional - works without it too)
-TWILIO_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
-TWILIO_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
-TWILIO_WHATSAPP = os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+14155238886") # Twilio sandbox default
 
 STYLE = """<style>
 *{box-sizing:border-box}body{margin:0;font-family:sans-serif;background:#f8fafc;color:#0f172a}
@@ -51,7 +44,7 @@ label{font-size:11px;font-weight:800;color:#334155;margin-top:10px;display:block
 JS = """<script>
 const towns={"lusaka":[-15.4067,28.2871],"kitwe":[-12.8024,28.2132],"ndola":[-12.9587,28.6365],"kabwe":[-14.4439,28.4506],"livingstone":[-17.8528,25.8553],"chipata":[-13.6296,32.6467],"kasama":[-10.2107,31.1749],"mansa":[-11.1998,28.8934],"mongu":[-15.2667,23.1167],"solwezi":[-12.1735,26.3865],"chingola":[-12.5256,27.8824],"choma":[-16.8112,26.9979],"mwinilunga":[-11.7357,24.4298],"nakonde":[-9.3359,32.7537]};
 function haversine(lat1,lon1,lat2,lon2){const R=6371;const dLat=(lat2-lat1)*3.14159/180;const dLon=(lon2-lon1)*3.14159/180;const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*3.14159/180)*Math.cos(lat2*3.14159/180)*Math.sin(dLon/2)*Math.sin(dLon/2);return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
-async function calcDist(){const fromEl=document.getElementById('from_city');const toEl=document.getElementById('to_city');const distEl=document.getElementById('distance_km');const labelEl=document.getElementById('dist_label');const boxEl=document.getElementById('auto_box');if(!fromEl||!toEl||!distEl)return;const from=fromEl.value.toLowerCase();const to=toEl.value.toLowerCase();let fromKey=null,toKey=null;for(let k in towns){if(from.includes(k)){fromKey=k;break;}}for(let k in towns){if(to.includes(k)){toKey=k;break;}}if(!fromKey||!toKey){if(labelEl)labelEl.innerHTML="Type Zambian town to calculate distance";return;}if(labelEl)labelEl.innerHTML="Calculating distance "+fromKey+" to "+toKey+"...";const lat1=towns[fromKey][0],lon1=towns[fromKey][1],lat2=towns[toKey][0],lon2=towns[toKey][1];const straight=Math.round(haversine(lat1,lon1,lat2,lon2));try{const url="https://router.project-osrm.org/route/v1/driving/"+lon1+","+lat1+";"+lon2+","+lat2+"?overview=false";const res=await fetch(url);const data=await res.json();if(data.routes&&data.routes[0]&&data.routes[0].distance){let km=Math.round(data.routes[0].distance/1000);let h=Math.round(data.routes[0].duration/3600*10)/10;distEl.value=km+" km";if(labelEl)labelEl.innerHTML="Distance: "+km+" km";if(boxEl)boxEl.innerHTML="Distance: "+km+" km | "+h+" hrs";if(typeof calcWeightPrice==="function")calcWeightPrice();return;}}catch(e){}let est=Math.round(straight*1.38);if((fromKey=="lusaka"&&toKey=="kitwe")||(fromKey=="kitwe"&&toKey=="lusaka"))est=363;distEl.value=est+" km";if(labelEl)labelEl.innerHTML="Distance: "+est+" km";if(boxEl)boxEl.innerHTML="Distance: "+est+" km";if(typeof calcWeightPrice==="function")calcWeightPrice();}
+async function calcDist(){const fromEl=document.getElementById('from_city');const toEl=document.getElementById('to_city');const distEl=document.getElementById('distance_km');const labelEl=document.getElementById('dist_label');const boxEl=document.getElementById('auto_box');if(!fromEl||!toEl||!distEl)return;const from=fromEl.value.toLowerCase();const to=toEl.value.toLowerCase();let fromKey=null,toKey=null;for(let k in towns){if(from.includes(k)){fromKey=k;break;}}for(let k in towns){if(to.includes(k)){toKey=k;break;}}if(!fromKey||!toKey){if(labelEl)labelEl.innerHTML="Type Zambian town";return;}if(labelEl)labelEl.innerHTML="Calculating "+fromKey+" to "+toKey+"...";const lat1=towns[fromKey][0],lon1=towns[fromKey][1],lat2=towns[toKey][0],lon2=towns[toKey][1];const straight=Math.round(haversine(lat1,lon1,lat2,lon2));try{const url="https://router.project-osrm.org/route/v1/driving/"+lon1+","+lat1+";"+lon2+","+lat2+"?overview=false";const res=await fetch(url);const data=await res.json();if(data.routes&&data.routes[0]&&data.routes[0].distance){let km=Math.round(data.routes[0].distance/1000);let h=Math.round(data.routes[0].duration/3600*10)/10;distEl.value=km+" km";if(labelEl)labelEl.innerHTML="Distance: "+km+" km";if(boxEl)boxEl.innerHTML="Distance: "+km+" km | "+h+" hrs";if(typeof calcWeightPrice==="function")calcWeightPrice();return;}}catch(e){}let est=Math.round(straight*1.38);if((fromKey=="lusaka"&&toKey=="kitwe")||(fromKey=="kitwe"&&toKey=="lusaka"))est=363;distEl.value=est+" km";if(labelEl)labelEl.innerHTML="Distance: "+est+" km";if(boxEl)boxEl.innerHTML="Distance: "+est+" km";if(typeof calcWeightPrice==="function")calcWeightPrice();}
 function parseWeightKg(text){if(!text)return 0;let t=text.toLowerCase();let num=parseFloat(t.replace(/[^0-9.]/g,''));if(isNaN(num))return 0;if(t.includes("ton"))return num*1000;return num;}
 function calcWeightPrice(){const weightEl=document.getElementById('weight');const rateEl=document.getElementById('rate_per_kg');const priceEl=document.getElementById('price');const priceBox=document.getElementById('price_calc_box');if(!weightEl||!rateEl||!priceEl)return;let kg=parseWeightKg(weightEl.value);let rate=parseFloat(rateEl.value)||30;if(kg>0){let total=Math.round(kg*rate);if(priceBox){priceBox.innerHTML="Weight: "+kg+" kg x K"+rate+" = <b>K"+total+"</b>";priceBox.style.display="block";}if(!priceEl.value||priceEl.dataset.auto=="1"){priceEl.value=total;priceEl.dataset.auto="1";}}}
 function onWeightInput(){const p=document.getElementById('price');if(p)p.dataset.auto="1";calcWeightPrice();}
@@ -63,37 +56,26 @@ def get_bot_menu():
     trucks_text = ""
     if trucks_memory:
         for t in trucks_memory[:3]:
-            trucks_text += f"🚛 {t.get('from_city')} → {t.get('to_city')} | {t.get('distance_km')} | {t.get('truck_type')} | K{t.get('price')}\n"
+            trucks_text += f"🚛 {t.get('from_city')} → {t.get('to_city')} | {t.get('distance_km')} | K{t.get('price')}\n"
     else:
         trucks_text = "No trucks available now.\n"
-
-    return f"""*MZIGO.ZM* - Across Zambia 🚚
-ACROSS ZAMBIA - 10 Provinces
-
-*AVAILABLE TRUCKS:*
+    return f"""MZIGO.ZM - Across Zambia
+AVAILABLE TRUCKS:
 {trucks_text}
-*WEIGHT PRICING (Platinum style):*
+WEIGHT PRICING:
 K25/kg Budget
-K30/kg Standard ⭐
+K30/kg Standard
 K35/kg Express
-K50/kg Urgent
-
-*PAYMENT:*
+PAYMENT:
 MTN MoMo: 0964343865
 Airtel Money: 0976166422
-
-*MENU:*
-1 - List all trucks
+MENU:
+1 - List trucks
 2 - List loads
-3 - Post truck (Driver)
-4 - Post load (Trader)
-5 - Payment info
+3 - Post truck
+4 - Post load
+5 - Payment
 6 - Help
-
-Reply with number or type:
-TRUCK Kitwe Lusaka
-LOAD Lusaka Ndola 1000kg
-
 Visit: https://mzigo-bot.onrender.com
 """
 
@@ -101,11 +83,7 @@ Visit: https://mzigo-bot.onrender.com
 async def home():
     return HTMLResponse("""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Mzigo Zambia</title>""" + STYLE + """</head><body>
 <header><div class="logo">MZIGO<span>.ZM</span></div><div style="font-size:12px;opacity:.8">Zambia's smart logistics platform - No truck returns empty</div><div class="badge-across">ACROSS ZAMBIA</div><div class="provinces"><span>Central</span><span>Copperbelt</span><span>Eastern</span><span>Luapula</span><span>Lusaka</span><span>Muchinga</span><span>Northern</span><span>North-Western</span><span>Southern</span><span>Western</span></div></header>
-<div class="container">
-<div class="card" style="background:#0f172a;color:#fff"><h2 style="margin:0">🚛 I'm a Driver</h2><p style="opacity:.85;font-size:13px">Have empty truck? Post it and get loads across Zambia.</p><a href="/driver" class="btn btn-green">Enter as Driver →</a></div>
-<div class="card" style="border:2px solid #f97316"><h2 style="margin:0">📦 I'm a Trader</h2><p class="small">Need a truck for your goods? Post your load. Weight-based K25-35/kg</p><a href="/trader" class="btn btn-dark">Enter as Trader →</a></div>
-<div class="card" style="background:#dcfce7;border:2px solid #22c55e"><h3 style="margin:0">🤖 WhatsApp Bot Active</h3><p class="small">Auto-replies on WhatsApp with trucks, payments, weight pricing</p><div class="bot-msg">User: "Truck?"<br>Bot: "🚛 Kitwe → Lusaka 362km | K10000 | Pay MTN 0964343865 or Airtel 0976166422"</div><a href="/whatsapp-bot" class="btn btn-green">View Bot Setup →</a><a href="/test-bot" class="btn btn-blue">Test Bot Reply</a></div>
-</div><div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422<br>WhatsApp Bot Active</div></body></html>""")
+<div class="container"><div class="card" style="background:#0f172a;color:#fff"><h2 style="margin:0">🚛 I'm a Driver</h2><p style="opacity:.85;font-size:13px">Have empty truck? Post it and get loads across Zambia.</p><a href="/driver" class="btn btn-green">Enter as Driver →</a></div><div class="card" style="border:2px solid #f97316"><h2 style="margin:0">📦 I'm a Trader</h2><p class="small">Need a truck? Post your load. Weight-based K25-35/kg</p><a href="/trader" class="btn btn-dark">Enter as Trader →</a></div><div class="card" style="background:#dcfce7;border:2px solid #22c55e"><h3 style="margin:0">🤖 WhatsApp Bot Active</h3><p class="small">Auto-replies with trucks, payments, weight pricing</p><div class="bot-msg">User: "Truck?"<br>Bot: "🚛 Kitwe → Lusaka 362km | K10000 | Pay MTN 0964343865 or Airtel 0976166422"</div><a href="/whatsapp-bot" class="btn btn-green">View Bot Setup →</a><a href="/test-bot" class="btn btn-blue">Test Bot Reply</a></div></div><div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422<br>WhatsApp Bot Active</div></body></html>""")
 
 @app.get("/driver", response_class=HTMLResponse)
 async def driver_screen():
@@ -168,51 +146,11 @@ async def trader_screen():
 async def whatsapp_bot_page():
     return HTMLResponse("""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>WhatsApp Bot</title>""" + STYLE + """</head><body>
 <header><div class="logo">MZIGO<span>.ZM</span> WHATSAPP BOT</div><div class="badge-across">BOT ACTIVE</div><div class="provinces"><span>Central</span><span>Copperbelt</span><span>Eastern</span><span>Luapula</span><span>Lusaka</span><span>Muchinga</span><span>Northern</span><span>North-Western</span><span>Southern</span><span>Western</span></div></header>
-<div class="container">
-<a href="/" class="back">← Home</a>
-<div class="card">
-<h3>🤖 WhatsApp Bot - How It Works</h3>
-<div class="bot-msg">
-<b>User sends:</b> "Truck?" or "1"<br>
-<b>Bot replies:</b><br>
-🚛 Kitwe → Lusaka | 362 km driving | 50 ton | K10000<br>
-💰 Pay: MTN 0964343865 | Airtel 0976166422<br>
-📏 Weight: K30/kg Platinum style
-</div>
-
-<h4>Setup (2 minutes):</h4>
-<p class="small"><b>Option 1 - Works NOW (no setup):</b><br>
-Your site already has wa.me links. Clicking "WhatsApp MTN" opens WhatsApp with message:<br>
-<code>https://wa.me/260964343865?text=Truck Kitwe to Lusaka 362km. Pay MTN 0964343865 or Airtel 0976166422</code><br>
-This is the bot! User clicks and you get WhatsApp message.</p>
-
-<p class="small"><b>Option 2 - Auto Bot (Twilio - Recommended):</b><br>
-1. Go to https://www.twilio.com/try-twilio<br>
-2. Get free WhatsApp sandbox: Send "join" to WhatsApp number they give<br>
-3. In Twilio console → Messaging → WhatsApp Sandbox → Set webhook to:<br>
-<code>https://mzigo-bot.onrender.com/whatsapp-webhook</code><br>
-4. Set ENV in Render:<br>
-TWILIO_ACCOUNT_SID=your_sid<br>
-TWILIO_AUTH_TOKEN=your_token<br>
-TWILIO_WHATSAPP_NUMBER=whatsapp:+14155238886<br>
-5. Now when someone WhatsApps your Twilio number, bot auto-replies with trucks!</p>
-
-<div class="card" style="background:#fff8ed">
-<b>Bot Commands:</b><br>
-• "truck" or "1" = List trucks<br>
-• "load" or "2" = List loads<br>
-• "pay" or "5" = Payment MTN 0964343865 | Airtel 0976166422<br>
-• "price" = Weight pricing K25-35/kg<br>
-• "help" or "6" = Menu
-</div>
-
-<a href="/test-bot?msg=truck" class="btn btn-green">Test Bot: Send "truck"</a>
-<a href="/test-bot?msg=pay" class="btn btn-blue">Test Bot: Payment Info</a>
-<a href="/driver" class="btn btn-dark">Go to Driver Screen</a>
-</div>
-</div>
-<div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422 | Bot Webhook: /whatsapp-webhook</div>
-</body></html>""")
+<div class="container"><a href="/" class="back">← Home</a>
+<div class="card"><h3>🤖 WhatsApp Bot - How It Works</h3><div class="bot-msg"><b>User:</b> "Truck?"<br><b>Bot:</b> "🚛 Kitwe → Lusaka 362km | K10000 | Pay MTN 0964343865 or Airtel 0976166422"</div>
+<h4>Works NOW - No setup:</h4><p class="small">Your buttons "WhatsApp MTN" open WhatsApp with payment message. That's the bot!<br><br><b>For full auto-reply:</b> Set webhook in Twilio to<br><code>https://mzigo-bot.onrender.com/whatsapp-webhook</code></p>
+<div class="card" style="background:#fff8ed"><b>Bot Commands:</b><br>- "truck" or "1" = List trucks<br>- "load" or "2" = List loads<br>- "pay" or "5" = Payment MTN 0964343865 | Airtel 0976166422<br>- "price" = Weight K25-35/kg</div>
+<a href="/test-bot?msg=truck" class="btn btn-green">Test Bot: Send "truck"</a><a href="/test-bot?msg=pay" class="btn btn-blue">Test Bot: Payment</a></div></div><div class="footer-contact"><b>MTN:</b> 0964343865 | <b>Airtel:</b> 0976166422 | Webhook: /whatsapp-webhook</div></body></html>""")
 
 @app.get("/test-bot", response_class=HTMLResponse)
 async def test_bot(msg: str = "truck"):
@@ -226,7 +164,36 @@ async def test_bot(msg: str = "truck"):
 
 def handle_whatsapp_message(incoming_msg: str) -> str:
     msg = incoming_msg.lower().strip()
-
     if msg in ["1", "truck", "trucks", "available", "truck?"]:
         if not trucks_memory:
-            return "🚛 *No trucks available now.*\nBe first to post at https://mzigo-bot.onrender.com/driver\n\n💰 Payment: MTN 0964343865 | Airtel 0976
+            return "No trucks now. Post at https://mzigo-bot.onrender.com/driver\n\nPayment: MTN 0964343865 | Airtel 0976166422"
+        text = "AVAILABLE TRUCKS ACROSS ZAMBIA:\n\n"
+        for t in trucks_memory[:5]:
+            text += f"{t.get('from_city')} -> {t.get('to_city')} | {t.get('distance_km')} | K{t.get('price')}\n"
+        text += "\nPay: MTN 0964343865 | Airtel 0976166422\nReply 3 to post truck"
+        return text
+    elif msg in ["2", "load", "loads"]:
+        if not loads_memory:
+            return "No loads. Post at https://mzigo-bot.onrender.com/trader\nWeight: K25-35/kg"
+        text = "AVAILABLE LOADS:\n\n"
+        for l in loads_memory[:5]:
+            text += f"{l.get('from_city')} -> {l.get('to_city')} | {l.get('weight')} | K{l.get('price')}\n"
+        return text
+    elif msg in ["5", "pay", "payment"]:
+        return "PAYMENT:\n\nMTN MoMo: 0964343865\nAirtel Money: 0976166422\nName: Josiah Mwape\n\nSend screenshot after payment."
+    elif "price" in msg or "kg" in msg:
+        return "WEIGHT PRICING:\nK25/kg Budget\nK30/kg Standard\nK35/kg Express\nK50/kg Urgent\nExample: 1000kg x K30 = K30000\nPay: MTN 0964343865 | Airtel 0976166422"
+    else:
+        return get_bot_menu()
+
+@app.post("/whatsapp-webhook")
+async def whatsapp_webhook(request: Request):
+    try:
+        form = await request.form()
+        incoming_msg = form.get("Body", "") or form.get("body", "") or ""
+        reply_text = handle_whatsapp_message(incoming_msg)
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+<Message>{reply_text}</Message>
+</Response>"""
+        ret
