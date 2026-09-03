@@ -4,7 +4,7 @@ import uuid, os, math, re
 from typing import Dict, Tuple, List, Optional
 from datetime import datetime
 
-# MZIGO.ZM V44 - 900+ LINES - SUPER AESTHETIC - All Zambia Auto Distance
+# MZIGO.ZM V44 - SUPER AESTHETIC - All Zambia Auto Distance
 # How it works: Reliable Transport, Flexible Payment CASH/MTN/Airtel, Delivery On Time
 # Payment: MTN 0964343865 MWNSA MULENGA / Airtel 0976166422 PRAISBE MWAPE / CASH
 
