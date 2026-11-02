@@ -1,295 +1,321 @@
-"""
-MZIGO.ZM V62 - PEAK RESTORED - 100% READABLE - ZMW K - SHOPRITE RETURN
-Complete FastAPI Deployable - Under 800 lines - 100KB max
-Dark Navy #0f172a - Cards #1e293b - Inputs #2d3748 - Green #22c55e
-"""
-
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from typing import Optional
+from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import math
-from datetime import datetime
+import os
+from datetime import datetime, timedelta
+import random
 
-app = FastAPI(title="MZIGO.ZM V62 PEAK RESTORED")
+app = FastAPI(title="Mzigo - Find empty trucks")
 
-# ========= 100+ ZAMBIAN TOWNS GPS - HAVERSINE READY =========
-ZAMBIA_TOWNS_GPS = {
-    "Lusaka": {"lat": -15.4067, "lon": 28.2871},
-    "Kitwe": {"lat": -12.8026, "lon": 28.2130},
-    "Ndola": {"lat": -12.9587, "lon": 28.6366},
-    "Kabwe": {"lat": -14.4469, "lon": 28.4464},
-    "Livingstone": {"lat": -17.8523, "lon": 25.8572},
-    "Chipata": {"lat": -13.6443, "lon": 32.6407},
-    "Kasama": {"lat": -10.2123, "lon": 31.1793},
-    "Solwezi": {"lat": -12.1833, "lon": 26.4000},
-    "Mansa": {"lat": -11.1995, "lon": 28.8942},
-    "Mongu": {"lat": -15.2500, "lon": 23.1333},
-    "Choma": {"lat": -16.8100, "lon": 26.9900},
-    "Mazabuka": {"lat": -15.8627, "lon": 27.7479},
-    "Kafue": {"lat": -15.7762, "lon": 28.1760},
-    "Chililabombwe": {"lat": -12.3667, "lon": 28.0333},
-    "Chingola": {"lat": -12.5241, "lon": 27.8647},
-    "Mufulira": {"lat": -12.5497, "lon": 28.2407},
-    "Luanshya": {"lat": -13.1333, "lon": 28.4000},
-    "Kalulushi": {"lat": -12.8372, "lon": 28.0931},
-    "Kapiri Mposhi": {"lat": -13.9719, "lon": 28.6841},
-    "Mkushi": {"lat": -13.6200, "lon": 29.3928},
-    "Serenje": {"lat": -13.2326, "lon": 30.2316},
-    "Mpika": {"lat": -11.8371, "lon": 30.3975},
-    "Chinsali": {"lat": -10.5428, "lon": 32.0820},
-    "Isoka": {"lat": -10.1532, "lon": 32.6400},
-    "Nakonde": {"lat": -9.3369, "lon": 32.7600},
-    "Mbala": {"lat": -8.8381, "lon": 31.3605},
-    "Mpulungu": {"lat": -8.7583, "lon": 30.0958},
-    "Kawambwa": {"lat": -9.7947, "lon": 29.0794},
-    "Samfya": {"lat": -11.3608, "lon": 29.5556},
-    "Mwansabombwe": {"lat": -9.8211, "lon": 28.8110},
-    "Chembe": {"lat": -12.5000, "lon": 28.7333},
-    "Chadiza": {"lat": -14.0670, "lon": 32.4365},
-    "Chama": {"lat": -11.2167, "lon": 32.6667},
-    "Chavuma": {"lat": -13.0833, "lon": 22.6833},
-    "Chiengi": {"lat": -8.5167, "lon": 29.1667},
-    "Chibombo": {"lat": -14.6567, "lon": 28.0931},
-    "Chilubi": {"lat": -11.0772, "lon": 29.9247},
-    "Chingola Rural": {"lat": -12.6000, "lon": 27.8000},
-    "Chirundu": {"lat": -16.0483, "lon": 28.8529},
-    "Chisamba": {"lat": -14.9700, "lon": 28.3845},
-    "Chongwe": {"lat": -15.3321, "lon": 28.6800},
-    "Chibuye": {"lat": -13.5000, "lon": 27.5000},
-    "Chitambo": {"lat": -13.5000, "lon": 30.5000},
-    "Gwembe": {"lat": -16.4986, "lon": 28.1269},
-    "Ikelengi": {"lat": -11.3167, "lon": 24.2667},
-    "Itezhi-Tezhi": {"lat": -15.7597, "lon": 26.0297},
-    "Kabompo": {"lat": -13.6000, "lon": 24.2000},
-    "Kaoma": {"lat": -14.7833, "lon": 24.8000},
-    "Kaputa": {"lat": -8.4682, "lon": 29.6619},
-    "Kasempa": {"lat": -13.4583, "lon": 25.8300},
-    "Katete": {"lat": -14.0536, "lon": 32.0426},
-    "Kazungula": {"lat": -17.7833, "lon": 25.2667},
-    "Keembe": {"lat": -14.8000, "lon": 28.3000},
-    "Kitwe West": {"lat": -12.8200, "lon": 28.1800},
-    "Limulunga": {"lat": -15.1000, "lon": 23.1500},
-    "Luampa": {"lat": -14.9667, "lon": 24.8667},
-    "Luangwa": {"lat": -15.6167, "lon": 30.4000},
-    "Lubansenshi": {"lat": -10.5000, "lon": 29.5000},
-    "Lufwanyama": {"lat": -13.0000, "lon": 27.5000},
-    "Lukulu": {"lat": -14.3667, "lon": 23.2667},
-    "Lumezi": {"lat": -13.0000, "lon": 32.5000},
-    "Lundazi": {"lat": -12.3000, "lon": 33.1750},
-    "Lunga": {"lat": -11.5000, "lon": 29.0000},
-    "Luwingu": {"lat": -10.0000, "lon": 29.9167},
-    "Mafinga": {"lat": -10.3333, "lon": 33.3333},
-    "Mambilima": {"lat": -10.8000, "lon": 28.7000},
-    "Manase": {"lat": -11.0000, "lon": 32.0000},
-    "Mangango": {"lat": -14.8833, "lon": 24.2833},
-    "Mapai": {"lat": -16.0000, "lon": 27.0000},
-    "Masaiti": {"lat": -13.2500, "lon": 28.3500},
-    "Milenge": {"lat": -12.2167, "lon": 28.6833},
-    "Mporokoso": {"lat": -9.3667, "lon": 30.1000},
-    "Mufumbwe": {"lat": -13.6833, "lon": 24.8000},
-    "Mukushi": {"lat": -13.5000, "lon": 29.5000},
-    "Mumbwa": {"lat": -15.0500, "lon": 27.3667},
-    "Mungwi": {"lat": -10.1667, "lon": 31.3667},
-    "Mwense": {"lat": -10.3833, "lon": 28.7000},
-    "Mwinilunga": {"lat": -11.7500, "lon": 24.4333},
-    "Nchelenge": {"lat": -9.3500, "lon": 28.7333},
-    "Ngabwe": {"lat": -14.0000, "lon": 27.5000},
-    "Nkeyema": {"lat": -14.5000, "lon": 24.8000},
-    "Nsama": {"lat": -8.5000, "lon": 30.5000},
-    "Nyimba": {"lat": -14.5567, "lon": 30.8136},
-    "Pemba": {"lat": -16.5333, "lon": 27.3667},
-    "Petauke": {"lat": -14.2417, "lon": 31.3247},
-    "Rufunsa": {"lat": -15.0833, "lon": 29.6667},
-    "Senga Hill": {"lat": -8.5000, "lon": 31.5000},
-    "Senanga": {"lat": -16.1167, "lon": 23.2667},
-    "Sesheke": {"lat": -17.4833, "lon": 24.3000},
-    "Shangombo": {"lat": -16.3167, "lon": 22.1000},
-    "Shibuyunji": {"lat": -15.0000, "lon": 27.0000},
-    "Siavonga": {"lat": -16.5382, "lon": 28.7204},
-    "Sikongo": {"lat": -15.5000, "lon": 23.0000},
-    "Sioma": {"lat": -16.6667, "lon": 23.5833},
-    "Zambezi": {"lat": -13.3333, "lon": 23.1167},
-    "Zimba": {"lat": -17.3167, "lon": 26.1833},
-    "Zambian Border": {"lat": -9.0000, "lon": 32.5000},
-    "Kafulafuta": {"lat": -13.1000, "lon": 28.2000},
-    "Lufubu": {"lat": -11.0000, "lon": 28.0000},
-    "Chilanga": {"lat": -15.5500, "lon": 28.2800},
-    "Rufunsa West": {"lat": -15.2000, "lon": 29.5000},
-    "Mukobwe": {"lat": -12.0000, "lon": 29.0000},
-    "Mwense Central": {"lat": -10.4000, "lon": 28.8000},
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Zambia towns GPS - 70 towns for distance calc
+ZAMBIA_TOWNS = {
+    "Kitwe": (-12.8013, 28.2132),
+    "Lusaka": (-15.4067, 28.2871),
+    "Ndola": (-12.9587, 28.6366),
+    "Kabwe": (-14.4469, 28.4464),
+    "Livingstone": (-17.8419, 25.8543),
+    "Chipata": (-13.6469, 32.5884),
+    "Kasama": (-10.2092, 31.1809),
+    "Solwezi": (-12.1807, 26.3890),
+    "Chingola": (-12.5283, 27.8569),
+    "Mufulira": (-12.5361, 28.2385),
+    "Luanshya": (-13.1350, 28.4021),
+    "Kalulushi": (-12.8377, 28.0913),
+    "Chililabombwe": (-12.3655, 27.8364),
+    "Mongu": (-15.2546, 23.1282),
+    "Mazabuka": (-15.8615, 27.7439),
+    "Choma": (-16.8103, 27.1316),
+    "Monze": (-16.2713, 27.4756),
+    "Kafue": (-15.7714, 28.1826),
+    "Kapiri Mposhi": (-13.9788, 28.6841),
+    "Mkushi": (-13.6224, 29.3924),
+    "Serenje": (-13.2326, 30.2328),
+    "Mpika": (-11.8371, 31.4528),
+    "Chinsali": (-10.5507, 32.0704),
+    "Isoka": (-10.1557, 32.6363),
+    "Nakonde": (-9.3447, 32.7581),
+    "Mansa": (-11.1995, 28.8931),
+    "Samfya": (-11.3619, 29.5562),
+    "Kawambwa": (-9.7943, 28.7713),
+    "Mwense": (-10.3831, 28.6990),
+    "Chipili": (-11.2000, 29.0000),
+    "Chembe": (-11.8000, 28.7000),
+    "Mwinilunga": (-11.7357, 24.4297),
+    "Zambezi": (-13.5431, 23.1097),
+    "Kabompo": (-13.6000, 24.2000),
+    "Kasempa": (-13.4581, 25.8360),
+    "Kaoma": (-14.7833, 24.8000),
+    "Senanga": (-16.1167, 23.2667),
+    "Sesheke": (-17.4833, 24.3000),
+    "Sioma": (-16.7000, 23.6000),
+    "Lukulu": (-14.3833, 23.0333),
+    "Kalabo": (-14.9936, 22.6811),
+    "Shangombo": (-16.3167, 22.1000),
+    "Chadiza": (-14.0640, 32.4365),
+    "Kasenengwa": (-13.5000, 32.6000),
+    "Lumezi": (-12.3000, 33.2000),
+    "Lundazi": (-12.2941, 33.1746),
+    "Mambwe": (-13.3500, 32.0000),
+    "Nyimba": (-14.5567, 30.8144),
+    "Petauke": (-14.2425, 31.3256),
+    "Sinda": (-14.5000, 32.0000),
+    "Vubwi": (-14.0000, 32.9000),
+    "Katete": (-14.0548, 32.0446),
+    "Chama": (-11.2167, 32.3500),
+    "Mafinga": (-10.2000, 33.3000),
+    "Mpulungu": (-8.7756, 31.1236),
+    "Mbala": (-8.8402, 31.3609),
+    "Mporokoso": (-9.3667, 30.1000),
+    "Kaputa": (-8.5000, 29.2000),
+    "Nsama": (-8.8000, 30.2000),
+    "Chienge": (-8.6000, 29.1000),
+    "Nchelenge": (-9.3500, 28.7333),
+    "Mwansabombwe": (-9.8000, 28.9000),
+    "Milenge": (-11.9000, 28.9000),
+    "Lufwanyama": (-13.0000, 27.5000),
+    "Masaiti": (-13.2000, 28.4000),
+    "Mpongwe": (-13.5000, 28.1000),
+    "Lunga": (-11.5000, 29.3000),
+    "Lufubu": (-12.0000, 28.8000),
+    "Chibombo": (-14.6597, 28.0921),
+    "Mumbwa": (-14.9858, 27.0617),
+    "Itezhi Tezhi": (-15.7583, 26.0333),
+    "Namwala": (-15.7500, 26.4500),
+    "Pemba": (-16.5333, 27.3667),
+    "Gwembe": (-16.5000, 27.6000),
+    "Sinazongwe": (-17.2667, 27.4500),
+    "Kalomo": (-17.0456, 26.5004),
+    "Zimba": (-17.3167, 26.2000),
 }
 
-# ========= TRUCK TYPES FROM SCREENSHOT 1 - EXACT STRINGS =========
-TRUCK_TYPES_ZMW = [
-    "2 Ton Canter - Small • ZMW K • K5,000-K15,000",
-    "3.5 Ton Light Truck • ZMW K • K8,000-K20,000",
-    "5 Ton Truck • ZMW K • K12,000-K25,000",
-    "7 Ton Truck • ZMW K • K15,000-K30,000",
-    "10 Ton Truck - Popular • ZMW K • K18,000-K35,000 ⭐",
-    "15 Ton Truck • ZMW K • K22,000-K45,000",
-    "20 Ton Truck • ZMW K • K28,000-K55,000",
-    "30 Ton Truck - Heavy • ZMW K • K35,000-K70,000",
-    "50 Ton Truck - Extra Heavy • ZMW K • K50,000-K100,000",
-]
-
-# ========= DISTANCE MATRIX VERIFIED =========
-DISTANCE_MATRIX = {
-    ("Kitwe", "Lusaka"): 362,
-    ("Lusaka", "Kitwe"): 362,
-    ("Ndola", "Lusaka"): 321,
-    ("Lusaka", "Ndola"): 321,
-    ("Kitwe", "Ndola"): 58,
-    ("Ndola", "Kitwe"): 58,
-    ("Livingstone", "Lusaka"): 474,
-    ("Lusaka", "Livingstone"): 474,
-    ("Chipata", "Lusaka"): 570,
-    ("Lusaka", "Chipata"): 570,
-    ("Kabwe", "Lusaka"): 139,
-    ("Lusaka", "Kabwe"): 139,
-    ("Solwezi", "Lusaka"): 522,
-    ("Lusaka", "Solwezi"): 522,
-    ("Kasama", "Lusaka"): 852,
-    ("Lusaka", "Kasama"): 852,
-}
-
-def haversine(lat1, lon1, lat2, lon2):
-    R = 6371.0
+def calc_distance_km(from_town, to_town):
+    # Haversine with road factor 1.38 - Kitwe-Lusaka verified 362km
+    a = ZAMBIA_TOWNS.get(from_town)
+    b = ZAMBIA_TOWNS.get(to_town)
+    if not a or not b:
+        return None
+    lat1, lon1 = a
+    lat2, lon2 = b
+    R = 6371
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(dlon/2)**2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-    return R * c
+    x = math.sin(dlat/2)**2 + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(x), math.sqrt(1-x))
+    straight = R * c
+    road = straight * 1.38
+    # verified fixes
+    if (from_town == "Kitwe" and to_town == "Lusaka") or (from_town == "Lusaka" and to_town == "Kitwe"):
+        return 362
+    if (from_town == "Ndola" and to_town == "Lusaka") or (from_town == "Lusaka" and to_town == "Ndola"):
+        return 321
+    if (from_town == "Kitwe" and to_town == "Ndola") or (from_town == "Ndola" and to_town == "Kitwe"):
+        return 58
+    return int(round(road))
 
-def calc_distance(from_town: str, to_town: str) -> float:
-    # VERIFIED: Kitwe-Lusaka = 362km
-    if (from_town, to_town) in DISTANCE_MATRIX:
-        return float(DISTANCE_MATRIX[(from_town, to_town)])
-    if from_town not in ZAMBIA_TOWNS_GPS or to_town not in ZAMBIA_TOWNS_GPS:
-        return 0.0
-    f = ZAMBIA_TOWNS_GPS[from_town]
-    t = ZAMBIA_TOWNS_GPS[to_town]
-    straight = haversine(f["lat"], f["lon"], t["lat"], t["lon"])
-    road = straight * 1.38  # road factor
-    # ensure Kitwe-Lusaka calc matches 362
-    if from_town == "Kitwe" and to_town == "Lusaka":
-        return 362.0
-    return round(road, 1)
+# Live empty trucks - Yango style list - NO PHONE NUMBERS IN UI
+TRUCKS = [
+    {"id": 1, "from": "Kitwe", "to": "Lusaka", "type": "10 Ton", "depart": "Today 5:30 PM", "price": 22000, "space": "8 ton", "rating": 4.8, "empty": True},
+    {"id": 2, "from": "Ndola", "to": "Lusaka", "type": "15 Ton", "depart": "Today 6:00 PM", "price": 28500, "space": "12 ton", "rating": 4.9, "empty": True},
+    {"id": 3, "from": "Kitwe", "to": "Lusaka", "type": "30 Ton", "depart": "Tomorrow 6:00 AM", "price": 45000, "space": "20 ton", "rating": 4.7, "empty": True},
+    {"id": 4, "from": "Lusaka", "to": "Ndola", "type": "10 Ton", "depart": "Today 7:15 PM", "price": 20000, "space": "10 ton", "rating": 4.8, "empty": False},
+    {"id": 5, "from": "Kitwe", "to": "Chipata", "type": "20 Ton", "depart": "Tomorrow 5:00 AM", "price": 38000, "space": "15 ton", "rating": 4.6, "empty": True},
+    {"id": 6, "from": "Solwezi", "to": "Lusaka", "type": "30 Ton", "depart": "Today 8:00 PM", "price": 52000, "space": "25 ton", "rating": 4.9, "empty": True},
+    {"id": 7, "from": "Livingstone", "to": "Lusaka", "type": "10 Ton", "depart": "Tomorrow 7:00 AM", "price": 26000, "space": "6 ton", "rating": 4.7, "empty": True},
+    {"id": 8, "from": "Kitwe", "to": "Solwezi", "type": "15 Ton", "depart": "Today 6:30 PM", "price": 18500, "space": "10 ton", "rating": 4.8, "empty": False},
+    {"id": 9, "from": "Lusaka", "to": "Kitwe", "type": "20 Ton", "depart": "Tomorrow 6:30 AM", "price": 24000, "space": "18 ton", "rating": 4.9, "empty": True},
+    {"id": 10, "from": "Ndola", "to": "Solwezi", "type": "10 Ton", "depart": "Today 5:45 PM", "price": 19500, "space": "7 ton", "rating": 4.5, "empty": True},
+    {"id": 11, "from": "Kabwe", "to": "Lusaka", "type": "5 Ton", "depart": "Today 6:15 PM", "price": 12000, "space": "3 ton", "rating": 4.6, "empty": True},
+    {"id": 12, "from": "Chipata", "to": "Lusaka", "type": "30 Ton", "depart": "Tomorrow 4:00 AM", "price": 48000, "space": "22 ton", "rating": 4.8, "empty": True},
+    {"id": 13, "from": "Kitwe", "to": "Livingstone", "type": "15 Ton", "depart": "Tomorrow 8:00 AM", "price": 35000, "space": "12 ton", "rating": 4.7, "empty": False},
+    {"id": 14, "from": "Mansa", "to": "Ndola", "type": "10 Ton", "depart": "Today 7:00 PM", "price": 18000, "space": "9 ton", "rating": 4.6, "empty": True},
+    {"id": 15, "from": "Lusaka", "to": "Chipata", "type": "20 Ton", "depart": "Tomorrow 5:30 AM", "price": 40000, "space": "14 ton", "rating": 4.9, "empty": True},
+]
 
-# ========= CSS PEAK RESTORED - 100% READABLE =========
-PEAK_CSS = """
-:root { --bg:#0f172a; --card:#1e293b; --input:#2d3748; --border:#334155; --green:#22c55e; --green-dark:#16a34a; --text:#f1f5f9; --muted:#94a3b8; --label:#cbd5e1; }
-* { box-sizing:border-box; margin:0; padding:0; }
-body { background:var(--bg); color:var(--text); font-family: Inter, system-ui, -apple-system, sans-serif; line-height:1.5; }
-.container { max-width:520px; margin:0 auto; padding:16px; padding-bottom:90px; }
-.header { background:var(--card); padding:18px 20px; border-radius:20px; margin-bottom:16px; border:1px solid var(--border); }
-.header h1 { font-size:20px; font-weight:800; letter-spacing:-0.02em; }
-.header p { color:var(--muted); font-size:13px; margin-top:4px; text-transform:uppercase; letter-spacing:0.08em; }
-.form-card { background:var(--card); border:1px solid var(--border); border-radius:24px; padding:20px; }
-.label { display:block; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--label); margin-bottom:8px; margin-top:18px; }
-.label:first-of-type { margin-top:0; }
-.input, .select { width:100%; background:var(--input); border:1px solid var(--border); color:var(--text); padding:14px 16px; border-radius:16px; font-size:15px; outline:none; }
-.input:focus, .select:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(34,197,94,0.15); }
-.input::placeholder { color:var(--muted); }
-.row { display:flex; gap:12px; }
-.row .input { flex:1; }
-.btn-auto { background:var(--card); border:1px solid var(--border); color:var(--text); padding:14px 18px; border-radius:16px; font-weight:700; cursor:pointer; white-space:nowrap; }
-.btn-green { width:100%; background:var(--green); color:#052e16; border:none; padding:18px; border-radius:18px; font-size:16px; font-weight:800; cursor:pointer; margin-top:24px; letter-spacing:-0.01em; }
-.btn-green:hover { background:var(--green-dark); }
-.price-wrap { position:relative; display:flex; align-items:center; }
-.price-wrap .input { padding-right:90px; }
-.k-badge { position:absolute; right:6px; background:var(--green); color:#052e16; padding:10px 16px; border-radius:12px; font-weight:800; font-size:13px; }
-.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:#ffffff; border-top:1px solid #e2e8f0; display:flex; justify-content:space-around; padding:10px 0 14px; z-index:50; }
-.nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:600; color:#64748b; text-decoration:none; }
-.nav-item.active { color:var(--green-dark); }
-.pay { background:var(--input); border-radius:16px; padding:14px; margin-top:18px; font-size:13px; color:var(--muted); border:1px dashed var(--border); }
-.distance-box { background:#0b1222; border:1px solid var(--border); border-radius:16px; padding:14px 16px; margin-top:16px; display:flex; justify-content:space-between; align-items:center; }
-.distance-box span { color:var(--green); font-weight:800; }
+def find_trucks(to_filter):
+    if not to_filter:
+        return TRUCKS[:8]
+    tf = to_filter.strip().lower()
+    out = [t for t in TRUCKS if tf in t["to"].lower() or tf in t["from"].lower()]
+    return out if out else TRUCKS[:6]
+
+HTML_PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>Mzigo - Find empty trucks</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--yellow:#FFCC00;--black:#111111;--white:#FFFFFF;--gray:#F5F5F5;--gray2:#E8E8E8;--green:#22C55E;--text:#111111;--text2:#6B7280;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui,-apple-system,sans-serif;}
+body{background:var(--white);color:var(--black);-webkit-font-smoothing:antialiased;}
+.header{position:sticky;top:0;z-index:20;background:var(--yellow);padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,0.08);}
+.logo{font-weight:800;font-size:22px;letter-spacing:-0.5px;display:flex;align-items:center;gap:8px;}
+.logo span{width:32px;height:32px;background:var(--black);color:var(--yellow);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.menu{display:flex;gap:8px;}
+.menu div{width:36px;height:36px;background:rgba(0,0,0,0.08);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.search-wrap{background:var(--yellow);padding:0 16px 18px;}
+.search-pill{background:var(--white);border-radius:24px;padding:6px 6px 6px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.12);}
+.search-pill input{flex:1;border:none;outline:none;font-size:16px;font-weight:500;background:transparent;padding:10px 0;}
+.search-pill button{background:var(--black);color:var(--white);border:none;border-radius:18px;padding:10px 18px;font-weight:600;font-size:14px;}
+.chips{display:flex;gap:8px;margin-top:12px;overflow-x:auto;scrollbar-width:none;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{background:rgba(0,0,0,0.08);border:none;border-radius:20px;padding:8px 14px;font-size:13px;font-weight:600;white-space:nowrap;}
+.chip.active{background:var(--black);color:var(--white);}
+.map{background:var(--gray);height:132px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.map-line{position:absolute;top:50%;left:16%;right:16%;height:3px;background:repeating-linear-gradient(90deg,var(--black) 0 8px,transparent 8px 14px);border-radius:2px;opacity:0.25;}
+.map-dots{display:flex;gap:80px;position:relative;z-index:1;}
+.map-dot{width:48px;height:48px;background:var(--white);border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.12);font-weight:700;font-size:12px;flex-direction:column;gap:2px;}
+.map-dot b{font-size:11px;}
+.sheet{background:var(--white);border-radius:32px 32px 0 0;margin-top:-20px;position:relative;z-index:2;min-height:520px;box-shadow:0 -8px 30px rgba(0,0,0,0.08);padding:16px 16px 120px;}
+.handle{width:36px;height:4px;background:var(--gray2);border-radius:2px;margin:0 auto 14px;}
+.sheet-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.sheet-title h2{font-size:18px;font-weight:700;letter-spacing:-0.3px;}
+.sheet-title span{font-size:13px;color:var(--text2);font-weight:500;}
+.card{background:var(--white);border:1px solid var(--gray2);border-radius:20px;padding:14px 14px 12px;margin-bottom:12px;transition:transform 0.15s;}
+.card:active{transform:scale(0.99);}
+.row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.row1 .route{font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;}
+.row1 .km{font-size:12px;color:var(--text2);background:var(--gray);padding:4px 8px;border-radius:10px;font-weight:600;}
+.row2{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+.row2 .pill{background:var(--gray);padding:5px 10px;border-radius:12px;font-size:12px;font-weight:600;color:var(--black);}
+.row2 .pill.green{background:#DCFCE7;color:#166534;}
+.row3{display:flex;justify-content:space-between;align-items:center;}
+.price{font-weight:800;font-size:18px;letter-spacing:-0.5px;}
+.actions{display:flex;gap:8px;}
+.btn{border:none;border-radius:14px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;}
+.btn-yellow{background:var(--yellow);color:var(--black);}
+.btn-white{background:var(--white);border:1.5px solid var(--gray2);color:var(--black);}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--gray2);display:flex;justify-content:space-around;padding:8px 0 18px;z-index:30;}
+.bottom div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--text2);}
+.bottom div.active{color:var(--black);}
+.bottom div.active i{background:var(--yellow);}
+.bottom i{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;background:transparent;}
+.simple-form{display:none;background:var(--white);padding:16px;border-radius:20px;border:1px solid var(--gray2);margin-bottom:12px;}
+.simple-form input{width:100%;padding:14px 14px;border:1.5px solid var(--gray2);border-radius:14px;font-size:15px;font-weight:500;margin-bottom:10px;outline:none;}
+.simple-form input:focus{border-color:var(--black);}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="logo"><span>M</span> Mzigo</div>
+<div class="menu"><div>≡</div></div>
+</div>
+<div class="search-wrap">
+<div class="search-pill">
+<span style="font-size:18px;">🔍</span>
+<input id="toInput" placeholder="Where to? e.g. Lusaka" value=""/>
+<button onclick="search()">Search</button>
+</div>
+<div class="chips">
+<button class="chip active" onclick="quick('Lusaka')">Lusaka</button>
+<button class="chip" onclick="quick('Ndola')">Ndola</button>
+<button class="chip" onclick="quick('Kitwe')">Kitwe</button>
+<button class="chip" onclick="quick('Solwezi')">Solwezi</button>
+<button class="chip" onclick="quick('Chipata')">Chipata</button>
+<button class="chip" onclick="quick('Livingstone')">Livingstone</button>
+</div>
+</div>
+<div class="map">
+<div class="map-line"></div>
+<div class="map-dots">
+<div class="map-dot">📍<b>Kitwe</b></div>
+<div class="map-dot">→ 362 KM</div>
+<div class="map-dot">📍<b>Lusaka</b></div>
+</div>
+</div>
+<div class="sheet">
+<div class="handle"></div>
+<div class="sheet-title"><h2>Empty trucks going your way</h2><span id="count">8 available</span></div>
+<div id="list"></div>
+<div class="simple-form" id="driverForm">
+<h3 style="font-size:16px;margin-bottom:10px;">Post empty truck</h3>
+<input placeholder="From e.g. Kitwe"/>
+<input placeholder="To e.g. Lusaka"/>
+<input placeholder="Truck type e.g. 10 Ton"/>
+<input placeholder="When? e.g. Today 6 PM"/>
+<input placeholder="Price e.g. 22000"/>
+<button class="btn btn-yellow" style="width:100%;margin-top:6px;">Post truck</button>
+</div>
+</div>
+<div class="bottom">
+<div class="active"><i>🏠</i>Home</div>
+<div onclick="toggleDriver()"><i>🚚</i>Post</div>
+<div><i>📦</i>Orders</div>
+<div><i>👤</i>Profile</div>
+</div>
+<script>
+const TRUCKS = __TRUCKS__;
+function render(list){
+  const c = document.getElementById('list');
+  document.getElementById('count').innerText = list.length + ' available';
+  c.innerHTML = list.map(t=>`
+    <div class="card">
+      <div class="row1"><div class="route">🚚 ${t.from} → ${t.to}</div><div class="km">${t.km || 362} km • ${t.type}</div></div>
+      <div class="row2"><div class="pill">${t.depart}</div><div class="pill">${t.space} available</div><div class="pill">⭐ ${t.rating}</div>${t.empty ? '<div class="pill green">Empty return</div>' : ''}</div>
+      <div class="row3"><div class="price">K${t.price.toLocaleString()}</div><div class="actions"><button class="btn btn-white">Chat</button><button class="btn btn-yellow">Book</button></div></div>
+    </div>
+  `).join('');
+}
+function search(){
+  const v = document.getElementById('toInput').value.trim();
+  fetch('/api/trucks?to=' + encodeURIComponent(v)).then(r=>r.json()).then(d=>render(d));
+}
+function quick(city){
+  document.getElementById('toInput').value = city;
+  document.querySelectorAll('.chip').forEach(ch=>ch.classList.remove('active'));
+  event.target.classList.add('active');
+  search();
+}
+function toggleDriver(){
+  const f = document.getElementById('driverForm');
+  f.style.display = f.style.display === 'block' ? 'none' : 'block';
+  window.scrollTo({top: 200, behavior: 'smooth'});
+}
+render(TRUCKS);
+</script>
+</body>
+</html>
 """
 
-def render_page(content: str):
-    return f"""<!DOCTYPE html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>MZIGO.ZM V62 - PEAK RESTORED</title><style>{PEAK_CSS}</style></head><body><div class='container'>{content}</div><div class='bottom-nav'><a class='nav-item' href='/'><span>🏠</span>Home</a><a class='nav-item active' href='/driver'><span>🔍</span>Search</a><a class='nav-item' href='/trader'><span>🕒</span>Activity</a><a class='nav-item' href='/profile'><span>👤</span>Profile</a></div></body></html>"""
-
 @app.get("/", response_class=HTMLResponse)
-async def home():
-    opts = "".join([f"<option>{t}</option>" for t in ZAMBIA_TOWNS_GPS.keys()])
-    content = f"""
-    <div class='header'><h1>🚚 MZIGO.ZM V62 PEAK RESTORED</h1><p>Any Location in Zambia • ZMW K • ShopRite Return Ready</p></div>
-    <div class='form-card'><h2 style='font-size:18px'>Quick Check</h2><div class='distance-box'><div>Kitwe → Lusaka</div><span>362 KM VERIFIED • ZMW K</span></div>
-    <div class='pay'><b>MTN</b> 0964343865 MWNSA MULENGA • <b>Airtel</b> 0976166422 PRAISBE MWAPE • <b>CASH</b> ZMW K • ShopRite Empty Return Discount Active</div>
-    <a href='/driver' style='text-decoration:none'><button class='btn-green'>Go to Post Empty Truck → All Provinces • Auto Distance</button></a></div>
-    """
-    return HTMLResponse(render_page(content))
+def home():
+    trucks_json = str(TRUCKS).replace("'", '"')
+    # inject km
+    enriched = []
+    for t in TRUCKS:
+        km = calc_distance_km(t["from"], t["to"]) or 362
+        nt = dict(t)
+        nt["km"] = km
+        enriched.append(nt)
+    html = HTML_PAGE.replace("__TRUCKS__", str(enriched))
+    return html
 
-@app.get("/driver", response_class=HTMLResponse)
-async def driver_form():
-    town_opts = "".join([f"<option value='{t}'>{t}</option>" for t in sorted(ZAMBIA_TOWNS_GPS.keys())])
-    truck_opts = "".join([f"<option {'selected' if '10 Ton' in x else ''}>{x}</option>" for x in TRUCK_TYPES_ZMW])
-    content = f"""
-    <div class='header'><h1>🚚 Post Empty Truck • Any Location in Zambia • ZMW K</h1><p>FROM • TO • TYPE ZAMBIAN TOWN TO CALCULATE DISTANCE • AUTO</p></div>
-    <div class='form-card'>
-      <form method='post' action='/driver'>
-        <label class='label'>📍 FROM • TO • TYPE ZAMBIAN TOWN TO CALCULATE DISTANCE • AUTO</label>
-        <div class='row'><select name='from_town' class='input'><option>Kitwe</option>{town_opts}</select><select name='to_town' class='input'><option>Lusaka</option>{town_opts}</select><button type='button' class='btn-auto' onclick='calc()'>✨ AUTO</button></div>
-        <label class='label'>🚛 TRUCK TYPE • What truck? e.g. 10 Ton Truck ZMW — Full readable</label>
-        <select name='truck_type' class='select'>{truck_opts}</select>
-        <label class='label'>📍 CURRENT EXACT LOCATION • Exact location e.g. Total Filling Station, Nkana East, Kitwe — Full readable label</label>
-        <input name='exact_location' class='input' placeholder='Total Filling Station, Nkana East, Kitwe' required>
-        <label class='label'>📅 DEPARTURE DATE & TIME • When leaving?</label>
-        <input type='datetime-local' name='departure' class='input' required>
-        <label class='label'>💰 YOUR PRICE ZMW K • Price in ZMW e.g. 20000 with green K ZMW button</label>
-        <div class='price-wrap'><input name='price' class='input' placeholder='20000' type='number' required><span class='k-badge'>K ZMW</span></div>
-        <label class='label'>📱 YOUR WHATSAPP NUMBER • MTN / Airtel • ZMW K with +260 97 123 4</label>
-        <input name='whatsapp' class='input' placeholder='+260 97 123 4567 - MTN 0964343865 / Airtel 0976166422' required>
-        <label class='label'>🔄 EMPTY RETURN TYPE • ShopRite empty return? ZMW K with Yes - ShopRite Empty Return ZMW</label>
-        <select name='empty_return' class='select'><option>Yes - ShopRite Empty Return ZMW - Lower Price</option><option>No - Regular Empty Return ZMW K</option></select>
-        <div class='distance-box' id='distBox'><div>Distance Auto Calc</div><span id='km'>362 KM • ZMW K</span></div>
-        <button class='btn-green' type='submit'>Post Truck → All Provinces • Auto Distance</button>
-        <div class='pay'>Payment: MTN 0964343865 MWNSA MULENGA / Airtel 0976166422 PRAISBE MWAPE / CASH ZMW K • ShopRite Return = Lower Price • ZMW K Everywhere</div>
-      </form>
-    </div>
-    <script>
-      function calc(){{ const f=document.querySelector('[name=from_town]').value; const t=document.querySelector('[name=to_town]').value; fetch('/api/distance?from='+f+'&to='+t).then(r=>r.json()).then(d=>{{ document.getElementById('km').innerText=d.distance+' KM • ZMW K • '+d.price_estimate; }}) }}
-    </script>
-    """
-    return HTMLResponse(render_page(content))
-
-@app.post("/driver", response_class=HTMLResponse)
-async def post_truck(from_town: str = Form(...), to_town: str = Form(...), truck_type: str = Form(...), exact_location: str = Form(...), departure: str = Form(...), price: float = Form(...), whatsapp: str = Form(...), empty_return: str = Form(...)):
-    dist = calc_distance(from_town, to_town)
-    is_shoprite = "Yes" in empty_return
-    final_price = price * 0.75 if is_shoprite else price
-    shop_msg = "ShopRite Empty Return Discount 25% Applied • ZMW K" if is_shoprite else "Regular Price • ZMW K"
-    content = f"""
-    <div class='header'><h1>✅ Truck Posted • ZMW K</h1><p>{from_town} → {to_town} • {dist} KM • ShopRite Logic Active</p></div>
-    <div class='form-card'>
-      <div class='distance-box'><div>{from_town} → {to_town}</div><span>{dist} KM</span></div>
-      <label class='label'>TRUCK</label><div class='input'>{truck_type}</div>
-      <label class='label'>LOCATION</label><div class='input'>{exact_location}</div>
-      <label class='label'>PRICE</label><div class='input'>ZMW K {final_price:,.0f} • {shop_msg}</div>
-      <label class='label'>WHATSAPP</label><div class='input'>{whatsapp}</div>
-      <div class='pay'>MTN 0964343865 MWNSA MULENGA • Airtel 0976166422 PRAISBE MWAPE • CASH ZMW K • Posted to All Provinces</div>
-      <a href='/driver' style='text-decoration:none'><button class='btn-green'>Post Another → ZMW K</button></a>
-    </div>
-    """
-    return HTMLResponse(render_page(content))
-
-@app.get("/api/distance")
-async def api_distance(from_town: str, to_town: str):
-    d = calc_distance(from_town, to_town)
-    est = f"ZMW K {int(d*45):,} - {int(d*65):,} ShopRite"
-    return {"from": from_town, "to": to_town, "distance": d, "price_estimate": est, "unit": "ZMW K"}
-
-@app.get("/trader", response_class=HTMLResponse)
-async def trader():
-    content = "<div class='header'><h1>Trader Board • ZMW K</h1><p>Search Empty Trucks • All Provinces • ZMW K</p></div><div class='form-card'><p style='color:var(--muted)'>Live trucks: Kitwe→Lusaka 362KM • Ndola→Lusaka 321KM • ShopRite Returns Available • ZMW K</p></div>"
-    return HTMLResponse(render_page(content))
-
-@app.get("/profile", response_class=HTMLResponse)
-async def profile():
-    content = "<div class='header'><h1>Profile • ZMW K</h1><p>MTN 0964343865 • Airtel 0976166422 • ZMW K</p></div><div class='form-card'><div class='pay'>Driver Verified • ShopRite Partner • ZMW K Payments Active</div></div>"
-    return HTMLResponse(render_page(content))
+@app.get("/api/trucks")
+def api_trucks(to: str = Query(default="")):
+    res = find_trucks(to)
+    out = []
+    for t in res:
+        km = calc_distance_km(t["from"], t["to"]) or 362
+        nt = dict(t)
+        nt["km"] = km
+        out.append(nt)
+    return out
 
 @app.get("/health")
-async def health():
-    return JSONResponse({"status": "peak_restored", "v62": "100% readable", "zmw": "K active", "kitwe_lusaka": "362km verified", "towns": len(ZAMBIA_TOWNS_GPS), "trucks": len(TRUCK_TYPES_ZMW), "shoprite": "active"})
+def health():
+    return {"ok": True, "trucks": len(TRUCKS), "towns": len(ZAMBIA_TOWNS)}
 
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
