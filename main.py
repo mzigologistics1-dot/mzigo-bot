@@ -1,10 +1,10 @@
 """
 =============================================================================
-MZIGO LOGISTICS & FREIGHT MATCHING PLATFORM - ENTERPRISE EDITION v5.5.0
+MZIGO LOGISTICS & FREIGHT MATCHING PLATFORM - ENTERPRISE CORE v6.0.0
 =============================================================================
 Author: Mzigo Logistics & Engineering Architecture Group
-Description: Mission-critical, high-availability logistics infrastructure 
-             powering empty return freight optimization across the SADC corridor.
+Description: Enterprise-grade backend infrastructure and embedded SPA frontend
+             for optimizing backhaul capacity across Zambian transport corridors.
 =============================================================================
 """
 
@@ -22,11 +22,11 @@ from typing import List, Dict, Any, Optional, Union
 from datetime import datetime, timedelta
 
 # FastAPI & Pydantic Frameworks
-from fastapi import FastAPI, Query, Request, HTTPException, status, Depends, BackgroundTasks, Security
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, Query, Request, HTTPException, status, Depends, Security
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field, field_validator, EmailStr
+from pydantic import BaseModel, Field, field_validator
 
 # --- Logging Subsystem Initialization ---
 logging.basicConfig(
@@ -39,7 +39,7 @@ logger = logging.getLogger("mzigo-enterprise")
 # --- Application Core Instance ---
 app = FastAPI(
     title="Mzigo Enterprise Logistics Infrastructure",
-    version="5.5.0",
+    version="6.0.0",
     description="Scalable freight corridor ecosystem connecting backhaul capacity across Zambia.",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -58,13 +58,11 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "mzigo_enterprise_hyper_secure_corrido
 security_scheme = HTTPBearer(auto_error=False)
 
 # =============================================================================
-# SECTION 1: DYNAMIC ENTERPRISE STORAGE SUBSYSTEMS (AUTHENTIC DATA)
+# SECTION 1: IN-MEMORY ENTERPRISE STORAGE SUBSYSTEMS
 # =============================================================================
 
 USERS_DB: Dict[str, Dict[str, Any]] = {}
 TOKENS_DB: Dict[str, Dict[str, Any]] = {}
-
-# Initializing with empty production state or verified dynamic listings
 TRUCKS_DB: List[Dict[str, Any]] = []
 ORDERS_DB: List[Dict[str, Any]] = []
 TELEMETRY_STREAM_LOGS: List[Dict[str, Any]] = []
@@ -758,4 +756,85 @@ def process_mobile_money_payment(payment: PaymentRequestSchema, phone: str = Dep
         "provider": payment.provider,
         "status": "Pending USSD Approval",
         "truck_id": payment.truck_id,
-        "
+        "timestamp": time.time()
+    }
+    ORDERS_DB.append(order_entry)
+    logger.info(f"Mobile money payment initiated: {transaction_id} via {payment.provider} for K{payment.amount}")
+    return {
+        "ok": True,
+        "message": f"USSD push prompt dispatched to {payment.provider} ({payment.phone}) for K{payment.amount:,.2f}",
+        "transaction_id": transaction_id,
+        "status": "Pending USSD Approval"
+    }
+
+@app.get("/api/orders")
+def get_user_orders(phone: str = Depends(verify_bearer_token)):
+    user_orders = [o for o in ORDERS_DB if o["client_phone"] == phone]
+    return user_orders
+
+@app.post("/api/signup", status_code=status.HTTP_201_CREATED)
+def api_user_signup(user_data: UserRegistrationSchema):
+    if user_data.phone in USERS_DB:
+        raise HTTPException(status_code=400, detail="Mobile number already registered in database.")
+    
+    USERS_DB[user_data.phone] = {
+        "name": user_data.name,
+        "phone": user_data.phone,
+        "role": user_data.role,
+        "password": hash_password(user_data.password),
+        "created_at": time.time()
+    }
+    token = generate_secure_token(user_data.phone)
+    logger.info(f"New enterprise user registered: {user_data.phone}")
+    return {
+        "ok": True,
+        "token": token,
+        "user": {"name": user_data.name, "phone": user_data.phone, "role": user_data.role}
+    }
+
+@app.post("/api/login")
+def api_user_login(credentials: UserLoginSchema):
+    clean_phone = re.sub(r'[^0-9]', '', credentials.phone)
+    if clean_phone.startswith('260'):
+        clean_phone = '0' + clean_phone[3:]
+
+    if clean_phone not in USERS_DB or not verify_password(credentials.password, USERS_DB[clean_phone]["password"]):
+        raise HTTPException(status_code=401, detail="Authentication failed. Invalid mobile number or password.")
+
+    token = generate_secure_token(clean_phone)
+    user_record = USERS_DB[clean_phone]
+    logger.info(f"User authenticated successfully: {clean_phone}")
+    return {
+        "ok": True,
+        "token": token,
+        "user": {"name": user_record["name"], "phone": clean_phone, "role": user_record["role"]}
+    }
+
+@app.post("/api/telemetry/ingest")
+def ingest_gps_telemetry(telemetry: TelemetryReportSchema):
+    TELEMETRY_STREAM_LOGS.append({
+        "truck_id": telemetry.truck_id,
+        "gps_id": telemetry.gps_tracker_id,
+        "lat": telemetry.latitude,
+        "lng": telemetry.longitude,
+        "speed": telemetry.speed_kmh,
+        "fuel": telemetry.fuel_level_percent,
+        "timestamp": time.time()
+    })
+    return {"status": "telemetry_logged_successfully"}
+
+@app.get("/health")
+def system_health_check():
+    return {
+        "status": "operational",
+        "secure_corridor_active": True,
+        "version": "6.0.0",
+        "timestamp": datetime.utcnow().isoformat(),
+        "registered_users": len(USERS_DB),
+        "active_listings": len(TRUCKS_DB)
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    port_number = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port_number)
