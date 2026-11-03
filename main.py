@@ -20,6 +20,7 @@ import secrets
 import hashlib
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime, timedelta
+from pricing_engine import calculate_corridor_estimate
 
 # FastAPI & Pydantic Frameworks
 from fastapi import FastAPI, Query, Request, HTTPException, status, Depends, Security
