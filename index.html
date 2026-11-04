@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080f1e">
+  <title>Mzigo Logistics | Freight Made Simple</title>
+
+  <style>
+    :root {
+      --navy: #080f1e;
+      --panel: #111d31;
+      --panel2: #172640;
+      --yellow: #f5c400;
+      --white: #f5f7fb;
+      --muted: #9aa9bf;
+      --green: #28c88a;
+      --red: #ff6262;
+      --border: #293952;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--navy);
+      color: var(--white);
+      font-family: Arial, sans-serif;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(8,15,30,.96);
+      border-bottom: 1px solid var(--border);
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -.8px;
+    }
+
+    .brand span { color: var(--yellow); }
+
+    .status {
+      font-size: 11px;
+      color: var(--green);
+      border: 1px solid #246c54;
+      padding: 6px 9px;
+      border-radius: 20px;
+    }
+
+    .container {
+      width: min(100% - 28px, 850px);
+      margin: auto;
+      padding-bottom: 110px;
+    }
+
+    .hero {
+      padding: 42px 5px 28px;
+    }
+
+    .eyebrow {
+      color: var(--yellow);
+      font-weight: bold;
+      letter-spacing: 2px;
+      font-size: 11px;
+    }
+
+    h1 {
+      font-size: clamp(34px, 8vw, 55px);
+      line-height: 1.05;
+      margin: 13px 0;
+    }
+
+    h1 span { color: var(--yellow); }
+
+    .subtitle {
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 550px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 23px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 13px 17px;
+      font-weight: bold;
+      background: var(--yellow);
+      color: #111;
+    }
+
+    .btn.secondary {
+      background: var(--panel2);
+      color: white;
+      border: 1px solid var(--border);
+    }
+
+    .btn.danger {
+      background: #49252b;
+      color: #ffd5d5;
+    }
+
+    .btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .section {
+      margin-top: 25px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 19px;
+    }
+
+    .section h2 {
+      margin: 0 0 15px;
+      font-size: 19px;
+    }
+
+    .muted { color: var(--muted); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 13px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: #091426;
+      border: 1px solid var(--border);
+      color: white;
+      padding: 13px;
+      border-radius: 9px;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--yellow);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 75px;
+    }
+
+    .truck-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .truck {
+      border: 1px solid var(--border);
+      background: #0c182b;
+      border-radius: 12px;
+      padding: 15px;
+    }
+
+    .truck-route {
+      font-weight: bold;
+      font-size: 17px;
+      margin-bottom: 9px;
+    }
+
+    .truck-meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .truck-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .price {
+      color: var(--yellow);
+      font-weight: bold;
+    }
+
+    .notice {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 9px;
+      line-height: 1.5;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .notice.show { display: block; }
+    .notice.success { background: #103c30; color: #a8f3d2; }
+    .notice.error { background: #48252a; color: #ffd1d1; }
+
+    .account {
+      background: var(--panel2);
+      border-radius: 10px;
+      padding: 13px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #0c1729;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 11px 5px calc(11px + env(safe-area-inset-bottom));
+      z-index: 20;
+    }
+
+    .bottom-nav button {
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 6px;
+    }
+
+    .bottom-nav button strong {
+      display: block;
+      font-size: 19px;
+      margin-bottom: 4px;
+    }
+
+    .bottom-nav button.active { color: var(--yellow); }
+
+    .hidden { display: none !important; }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 30px 10px;
+    }
+
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .section { padding: 15px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="brand">MZIGO<span> LOGISTICS</span></div>
+  <div class="status">● API CONNECTED</div>
+</header>
+
+<main class="container">
+
+  <section class="hero" id="home">
+    <div class="eyebrow">ZAMBIA'S FREIGHT CONNECTION</div>
+    <h1>Move cargo.<br><span>Find capacity.</span></h1>
+    <p class="subtitle">
+      Connect with available transport, discover freight opportunities
+      and make smarter logistics decisions across Zambia.
+    </p>
+    <div class="hero-actions">
+      <button class="btn" onclick="showSection('search')">Find a truck</button>
+      <button class="btn secondary" onclick="showSection('account')">Get started</button>
+    </div>
+  </section>
+
+  <section class="section" id="account">
+    <h2>Your Mzigo account</h2>
+
+    <div id="accountInfo" class="account">
+      You are not logged in. Register or log in to use bookings and truck listings.
+    </div>
+
+    <div id="authForms">
+      <div class="grid">
+        <div class="field full">
+          <label>FULL NAME (REGISTRATION)</label>
+          <input id="regName" placeholder="Your full name">
+        </div>
+
+        <div class="field">
+          <label>PHONE NUMBER</label>
+          <input id="regPhone" placeholder="0971234567" inputmode="tel">
+        </div>
+
+        <div class="field">
+          <label>ACCOUNT TYPE</label>
+          <select id="regRole">
+            <option value="trader">Trader</option>
+            <option value="fleet_owner">Fleet owner</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label>PASSWORD (MINIMUM 10 CHARACTERS)</label>
+          <input id="regPassword" type="password" placeholder="Create a password">
+        </div>
+      </div>
+
+      <button class="btn" onclick="registerUser()">Create account</button>
+
+      <hr style="border-color:var(--border);margin:22px 0">
+
+      <h2>Already registered?</h2>
+
+      <div class="field">
+        <label>PHONE NUMBER</label>
+        <input id="loginPhone" placeholder="0971234567" inputmode="tel">
+      </div>
+
+      <div class="field">
+        <label>PASSWORD</label>
+        <input id="loginPassword" type="password" placeholder="Your password">
+      </div>
+
+      <button class="btn" onclick="loginUser()">Log in</button>
+    </div>
+
+    <button id="logoutButton" class="btn danger hidden" onclick="logoutUser()">
+      Log out
+    </button>
+
+    <div id="authMessage" class="notice"></div>
+  </section>
+
+  <section class="section" id="search">
+    <h2>Find available trucks</h2>
+    <p class="muted">Search available transport by route and cargo capacity.</p>
+
+    <div class="grid">
+      <div class="field">
+        <label>COLLECTION CITY</label>
+        <input id="searchOrigin" placeholder="e.g. Lusaka">
+      </div>
+
+      <div class="field">
+        <label>DELIVERY CITY</label>
+        <input id="searchDestination" placeholder="e.g. Ndola">
+      </div>
+
+      <div class="field">
+        <label>MINIMUM TONNES</label>
+        <input id="searchTonnes" type="number" min="0" step="0.1" placeholder="Any">
+      </div>
+    </div>
+
+    <button class="btn" onclick="loadTrucks()">Search trucks</button>
+
+    <div id="truckMessage" class="notice"></div>
+    <div id="truckList" class="truck-list" style="margin-top:15px">
+      <p class="muted">Loading available trucks...</p>
+    </div>
+  </section>
+
+  <section class="section" id="post">
+    <h2>Publish your truck</h2>
+    <p class="muted">Fleet owners can advertise available transport capacity.</p>
+
+    <div class="grid">
+      <div class="field">
+        <label>ORIGIN</label>
+        <input id="truckOrigin" placeholder="Lusaka">
+      </div>
+
+      <div class="field">
+        <label>DESTINATION</label>
+        <input id="truckDestination" placeholder="Kitwe">
+      </div>
+
+      <div class="field">
+        <label>TRUCK TYPE</label>
+        <select id="truckType">
+          <option>Flatbed</option>
+          <option>Interlink</option>
+          <option>Side tipper</option>
+          <option>Superlink</option>
+          <option>Refrigerated</option>
+          <option>Box truck</option>
+          <option>Tanker</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>TOTAL CAPACITY (TONNES)</label>
+        <input id="truckCapacity" type="number" min="0.1" step="0.1">
+      </div>
+
+      <div class="field">
+        <label>AVAILABLE CAPACITY (TONNES)</label>
+        <input id="truckAvailable" type="number" min="0.1" step="0.1">
+      </div>
+
+      <div class="field">
+        <label>ASKING PRICE (ZMW, OPTIONAL)</label>
+        <input id="truckPrice" type="number" min="1" step="0.01">
+      </div>
+
+      <div class="field full">
+        <label>DEPARTURE DATE (OPTIONAL)</label>
+        <input id="truckDate" type="date">
+      </div>
+
+      <div class="field full">
+        <label>DESCRIPTION (OPTIONAL)</label>
+        <textarea id="truckDescription" placeholder="Additional information about your truck..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn" onclick="publishTruck()">Publish listing</button>
+    <div id="postMessage" class="notice"></div>
+  </section>
+
+  <section class="section" id="estimate">
+    <h2>Freight price estimator</h2>
+    <p class="muted">Get a preliminary estimate for supported Zambian routes.</p>
+
+    <div class="grid">
+      <div class="field">
+        <label>ORIGIN</label>
+        <input id="estimateOrigin" placeholder="Lusaka">
+      </div>
+
+      <div class="field">
+        <label>DESTINATION</label>
+        <input id="estimateDestination" placeholder="Ndola">
+      </div>
+
+      <div class="field">
+        <label>TRUCK TYPE</label>
+        <input id="estimateTruckType" value="General">
+      </div>
+
+      <div class="field">
+        <label>CARGO WEIGHT (TONNES)</label>
+        <input id="estimateTonnes" type="number" value="10" min="0.1" step="0.1">
+      </div>
+    </div>
+
+    <button class="btn" onclick="estimatePrice()">Calculate estimate</button>
+    <div id="estimateMessage" class="notice"></div>
+  </section>
+
+  <section class="section" id="bookings">
+    <h2>My bookings</h2>
+    <p class="muted">View your booking requests and their current status.</p>
+    <button class="btn secondary" onclick="loadBookings()">Refresh bookings</button>
+    <div id="bookingList" style="margin-top:15px">
+      <p class="muted">Log in to view your bookings.</p>
+    </div>
+  </section>
+
+  <footer>
+    MZIGO LOGISTICS © 2026<br>
+    Connecting cargo with available transport across Zambia.
+  </footer>
+
+</main>
+
+<nav class="bottom-nav">
+  <button class="active" onclick="showSection('home',this)">
+    <strong>⌂</strong>Home
+  </button>
+  <button onclick="showSection('search',this)">
+    <strong>⌕</strong>Find trucks
+  </button>
+  <button onclick="showSection('post',this)">
+    <strong>＋</strong>Publish
+  </button>
+  <button onclick="showSection('estimate',this)">
+    <strong>◇</strong>Estimate
+  </button>
+  <button onclick="showSection('account',this)">
+    <strong>◉</strong>Account
+  </button>
+</nav>
+
+<script>
+  const API = "https://mzigo-bot.onrender.com";
+
+  let token = localStorage.getItem("mzigo_token") || "";
+  let currentUser = null;
+
+  function showMessage(id, message, type = "success") {
+    const el = document.getElementById(id);
+    el.textContent = message;
+    el.className = "notice show " + type;
+  }
+
+  function clearMessage(id) {
+    const el = document.getElementById(id);
+    el.textContent = "";
+    el.className = "notice";
+  }
+
+  async function api(path, options = {}) {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    };
+
+    if (token) {
+      headers.Authorization = "Bearer " + token;
+    }
+
+    let response;
+
+    try {
+      response = await fetch(API + path, {
+        ...options,
+        headers
+      });
+    } catch (error) {
+      throw new Error("Cannot reach the server. Check your internet connection.");
+    }
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        token = "";
+        currentUser = null;
+        localStorage.removeItem("mzigo_token");
+        updateAccount();
+      }
+
+      throw new Error(data.detail || "Something went wrong.");
+    }
+
+    return data;
+  }
+
+  function updateAccount() {
+    const info = document.getElementById("accountInfo");
+    const forms = document.getElementById("authForms");
+    const logout = document.getElementById("logoutButton");
+
+    if (currentUser) {
+      info.textContent =
+        "Logged in as " + currentUser.full_name +
+        " | " + currentUser.role +
+        " | " + currentUser.phone;
+
+      forms.classList.add("hidden");
+      logout.classList.remove("hidden");
+    } else {
+      info.textContent =
+        "You are not logged in. Register or log in to use bookings and truck listings.";
+
+      forms.classList.remove("hidden");
+      logout.classList.add("hidden");
+    }
+  }
+
+  async function registerUser() {
+    clearMessage("authMessage");
+
+    const payload = {
+      full_name: document.getElementById("regName").value.trim(),
+      phone: document.getElementById("regPhone").value.trim(),
+      password: document.getElementById("regPassword").value,
+      role: document.getElementById("regRole").value
+    };
+
+    try {
+      const result = await api("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      showMessage(
+        "authMessage",
+        result.message + " You can now log in."
+      );
+    } catch (error) {
+      showMessage("authMessage", error.message, "error");
+    }
+  }
+
+  async function loginUser() {
+    clearMessage("authMessage");
+
+    try {
+      const result = await api("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          phone: document.getElementById("loginPhone").value.trim(),
+          password: document.getElementById("loginPassword").value
+        })
+      });
+
+      token = result.access_token;
+      localStorage.setItem("mzigo_token", token);
+      currentUser = result.user;
+
+      updateAccount();
+
+      showMessage("authMessage", "Welcome to Mzigo Logistics.");
+
+      loadTrucks();
+      loadBookings();
+
+    } catch (error) {
+      showMessage("authMessage", error.message, "error");
+    }
+  }
+
+  async function logoutUser() {
+    try {
+      await api("/api/auth/logout", { method: "POST" });
+    } catch (_) {
+      // Clear the local session even if the server is unreachable.
+    }
+
+    token = "";
+    currentUser = null;
+    localStorage.removeItem("mzigo_token");
+
+    updateAccount();
+    showMessage("authMessage", "You have logged out.");
+  }
+
+  async function restoreSession() {
+    if (!token) {
+      updateAccount();
+      return;
+    }
+
+    try {
+      currentUser = await api("/api/me");
+      updateAccount();
+      loadBookings();
+    } catch (_) {
+      token = "";
+      currentUser = null;
+      localStorage.removeItem("mzigo_token");
+      updateAccount();
+    }
+  }
+
+  async function loadTrucks() {
+    const list = document.getElementById("truckList");
+    const params = new URLSearchParams();
+
+    const origin = document.getElementById("searchOrigin").value.trim();
+    const destination = document.getElementById("searchDestination").value.trim();
+    const tonnes = document.getElementById("searchTonnes").value;
+
+    if (origin) params.set("origin", origin);
+    if (destination) params.set("destination", destination);
+    if (tonnes) params.set("min_tonnes", tonnes);
+
+    list.textContent = "Searching for available trucks...";
+
+    try {
+      const data = await api("/api/trucks?" + params.toString());
+
+      list.replaceChildren();
+
+      if (!data.trucks.length) {
+        list.textContent = "No matching trucks are currently listed.";
+        return;
+      }
+
+      data.trucks.forEach(truck => {
+        const card = document.createElement("article");
+        card.className = "truck";
+
+        const route = document.createElement("div");
+        route.className = "truck-route";
+        route.textContent = truck.origin + " → " + truck.destination;
+
+        const meta = document.createElement("div");
+        meta.className = "truck-meta";
+        meta.textContent =
+          truck.truck_type + " | " +
+          truck.available_tonnes + " tonnes available | " +
+          truck.capacity_tonnes + " tonnes total";
+
+        const bottom = document.createElement("div");
+        bottom.className = "truck-bottom";
+
+        const price = document.createElement("span");
+        price.className = "price";
+        price.textContent = truck.price_zmw
+          ? "ZMW " + Number(truck.price_zmw).toLocaleString()
+          : "Price on request";
+
+        const book = document.createElement("button");
+        book.className = "btn";
+        book.textContent = "Book capacity";
+        book.addEventListener("click", () => bookTruck(truck.id, truck.available_tonnes));
+
+        bottom.append(price, book);
+        card.append(route, meta, bottom);
+        list.append(card);
+      });
+
+    } catch (error) {
+      list.textContent = error.message;
+    }
+  }
+
+  async function bookTruck(truckId, availableTonnes) {
+    if (!token || !currentUser) {
+      showSection("account");
+      showMessage("authMessage", "Log in as a trader to book a truck.", "error");
+      return;
+    }
+
+    if (currentUser.role !== "trader") {
+      alert("Only trader accounts can create bookings.");
+      return;
+    }
+
+    const quantity = prompt(
+      "How many tonnes do you want to book? Available: " + availableTonnes
+    );
+
+    if (quantity === null) return;
+
+    const tonnes = Number(quantity);
+
+    if (!Number.isFinite(tonnes) || tonnes <= 0 || tonnes > availableTonnes) {
+      alert("Enter a valid quantity within the available capacity.");
+      return;
+    }
+
+    try {
+      const result = await api("/api/bookings", {
+        method: "POST",
+        body: JSON.stringify({
+          truck_id: truckId,
+          quantity_tonnes: tonnes
+        })
+      });
+
+      alert(result.message + " Booking ID: " + result.booking.id);
+
+      loadTrucks();
+      loadBookings();
+
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  async function publishTruck() {
+    if (!currentUser || !token) {
+      showMessage("postMessage", "Log in first.", "error");
+      return;
+    }
+
+    if (currentUser.role !== "fleet_owner") {
+      showMessage("postMessage", "You need a fleet-owner account to publish trucks.", "error");
+      return;
+    }
+
+    const payload = {
+      origin: document.getElementById("truckOrigin").value.trim(),
+      destination: document.getElementById("truckDestination").value.trim(),
+      truck_type: document.getElementById("truckType").value,
+      capacity_tonnes: Number(document.getElementById("truckCapacity").value),
+      available_tonnes: Number(document.getElementById("truckAvailable").value),
+      price_zmw: document.getElementById("truckPrice").value
+        ? Number(document.getElementById("truckPrice").value)
+        : null,
+      departure_date: document.getElementById("truckDate").value || null,
+      description: document.getElementById("truckDescription").value.trim() || null
+    };
+
+    try {
+      const result = await api("/api/trucks", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      showMessage(
+        "postMessage",
+        result.message + " Listing ID: " + result.truck_id
+      );
+
+      loadTrucks();
+
+    } catch (error) {
+      showMessage("postMessage", error.message, "error");
+    }
+  }
+
+  async function estimatePrice() {
+    const message = document.getElementById("estimateMessage");
+    clearMessage("estimateMessage");
+
+    const payload = {
+      origin: document.getElementById("estimateOrigin").value.trim(),
+      destination: document.getElementById("estimateDestination").value.trim(),
+      truck_type: document.getElementById("estimateTruckType").value.trim() || "General",
+      load_tonnes: Number(document.getElementById("estimateTonnes").value)
+    };
+
+    try {
+      const result = await api("/api/ai/estimate", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      message.textContent =
+        "Estimated price: ZMW " +
+        Number(result.estimated_price_zmw).toLocaleString() +
+        " | Distance: " + result.distance_km + " km" +
+        " | Approximate travel time: " + result.estimated_travel_hours +
+        " hours. " + result.disclaimer;
+
+      message.className = "notice show success";
+
+    } catch (error) {
+      showMessage("estimateMessage", error.message, "error");
+    }
+  }
+
+  async function loadBookings() {
+    const list = document.getElementById("bookingList");
+
+    if (!token) {
+      list.textContent = "Log in to view your bookings.";
+      return;
+    }
+
+    list.textContent = "Loading bookings...";
+
+    try {
+      const data = await api("/api/bookings");
+      list.replaceChildren();
+
+      if (!data.bookings.length) {
+        list.textContent = "You have no bookings yet.";
+        return;
+      }
+
+      data.bookings.forEach(booking => {
+        const item = document.createElement("div");
+        item.className = "truck";
+
+        const title = document.createElement("strong");
+        title.textContent = "Booking #" + booking.id;
+
+        const details = document.createElement("p");
+        details.className = "truck-meta";
+        details.textContent =
+          "Truck #" + booking.truck_id +
+          " | " + booking.quantity_tonnes + " tonnes" +
+          " | Status: " + booking.status +
+          " | Payment: " + booking.payment_status;
+
+        item.append(title, details);
+        list.append(item);
+      });
+
+    } catch (error) {
+      list.textContent = error.message;
+    }
+  }
+
+  function showSection(id, button) {
+    const target = document.getElementById(id);
+
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    document.querySelectorAll(".bottom-nav button").forEach(btn => {
+      btn.classList.remove("active");
+    });
+
+    if (button) button.classList.add("active");
+  }
+
+  restoreSession();
+  loadTrucks();
+</script>
+
+</body>
+</html>
