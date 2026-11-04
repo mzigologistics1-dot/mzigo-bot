@@ -550,12 +550,9 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {
-        "name": APP_NAME,
-        "version": APP_VERSION,
-        "status": "online",
-        "message": "Welcome to the Mzigo Logistics API.",
-    }
+    return FileResponse(
+        os.path.join(os.path.dirname(__file__), "index.html")
+    )
 
 
 @app.get("/api/health")
