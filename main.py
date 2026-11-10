@@ -44,6 +44,7 @@ from fastapi import (
     Query,
     status,
 )
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import (
