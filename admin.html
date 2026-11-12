@@ -1,0 +1,422 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a1020">
+<title>Mzigo Command Centre</title>
+<style>
+:root{--bg:#0a1020;--panel:#111c30;--panel2:#17253b;--line:#263750;--text:#f5f7fb;--muted:#98a8bd;--yellow:#ffcc00;--green:#39d49a;--red:#fb7185;--blue:#60a5fa;--radius:17px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Plus Jakarta Sans",Inter,system-ui,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.shell{min-height:100vh;display:grid;grid-template-columns:248px minmax(0,1fr)}
+.sidebar{background:#0d1729;border-right:1px solid var(--line);padding:24px 16px;display:flex;flex-direction:column;gap:28px}
+.brand{display:flex;align-items:center;gap:11px;padding:0 8px}.mark{width:40px;height:40px;border-radius:12px;background:var(--yellow);color:#111827;display:grid;place-items:center;font-size:22px;font-weight:900}.brand strong{display:block;font-size:18px;letter-spacing:.5px}.brand small{color:var(--muted);font-size:10px;letter-spacing:1.5px}
+.nav-label{padding:0 12px;color:#71839d;font-size:10px;letter-spacing:1.5px;font-weight:800}.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#aab8cb;text-align:left;padding:12px;border-radius:11px;display:flex;align-items:center;gap:12px;font-weight:650}.nav button:hover,.nav button.active{background:#1b2a42;color:white}.nav button.active{box-shadow:inset 3px 0 var(--yellow)}.nav .ico{width:20px;text-align:center;color:var(--yellow)}
+.sidebar-bottom{margin-top:auto;border-top:1px solid var(--line);padding:16px 8px 0;color:var(--muted);font-size:11px}
+.main{min-width:0}.topbar{height:76px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,4vw,42px);background:#0d1729;position:sticky;top:0;z-index:3}.crumb{color:var(--muted);font-size:12px}.topright{display:flex;align-items:center;gap:14px}.pill{border:1px solid #38513f;background:#10291f;color:#83e7b8;border-radius:999px;padding:6px 10px;font-size:10px;font-weight:800;letter-spacing:.8px}.avatar{width:35px;height:35px;border-radius:50%;background:#263b58;color:var(--yellow);display:grid;place-items:center;font-weight:800}
+.content{padding:30px clamp(18px,4vw,42px);max-width:1500px;margin:auto}.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}.eyebrow{color:var(--yellow);font-size:10px;letter-spacing:2px;font-weight:800}.page-head h1{margin:5px 0 4px;font-size:clamp(24px,3vw,32px);letter-spacing:-.8px}.sub{color:var(--muted);margin:0}.btn{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--panel2);color:white;font-weight:700}.btn.primary{background:var(--yellow);color:#111827;border-color:var(--yellow)}.btn:disabled{opacity:.55;cursor:wait}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#15233a,#111b2e);border:1px solid var(--line);border-radius:var(--radius);padding:19px;min-width:0}.metric-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}.metric-icon{width:34px;height:34px;border-radius:10px;background:#25344b;color:var(--yellow);display:grid;place-items:center;font-size:16px}.metric-value{font-size:30px;font-weight:800;letter-spacing:-1px;margin:12px 0 3px}.metric-foot{font-size:11px;color:var(--muted)}
+.columns{display:grid;grid-template-columns:1.25fr .75fr;gap:14px;margin-top:16px}.card h2{font-size:15px;margin:0 0 4px}.card .hint{color:var(--muted);font-size:11px;margin:0 0 18px}.bar-row{display:grid;grid-template-columns:110px 1fr 35px;gap:10px;align-items:center;margin:14px 0;font-size:12px;color:#c6d1df}.track{height:8px;border-radius:20px;background:#26364c;overflow:hidden}.fill{height:100%;border-radius:20px;background:var(--yellow);min-width:0}.fill.blue{background:var(--blue)}.fill.green{background:var(--green)}.fill.red{background:var(--red)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.field{background:#111d30;border:1px solid var(--line);border-radius:10px;padding:11px 13px;color:white;outline:none;min-width:190px}.field:focus{border-color:var(--yellow)}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:#111b2d}table{border-collapse:collapse;width:100%;min-width:760px}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid #25344a;font-size:12px}th{color:#8fa1b9;font-size:10px;text-transform:uppercase;letter-spacing:1px;background:#142139}td{color:#dce4ee}tbody tr:last-child td{border-bottom:0}.muted{color:var(--muted)}.status{display:inline-block;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800;background:#26344a;color:#cbd5e1}.status.available,.status.delivered{background:#103426;color:#7ce2b3}.status.pending,.status.fully-allocated{background:#3b3017;color:#f5d16b}.status.inactive{background:#3a202b;color:#fda4af}
+.alert{border:1px solid var(--line);background:#142139;border-radius:13px;padding:15px;margin:10px 0}.alert strong{display:block;margin:5px 0}.alert p{margin:0;color:var(--muted);font-size:12px}.alert small{color:#f4c95d;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.notice{border:1px solid #5a4720;background:#2b2414;color:#f5d98a;border-radius:12px;padding:12px 14px;font-size:12px;margin-bottom:16px}.empty{padding:36px;text-align:center;color:var(--muted)}.error{color:#fda4af}.loading{opacity:.6}
+.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 75% 10%,#1d3450,transparent 45%),var(--bg)}.login{width:min(100%,420px);padding:32px;background:#111d30;border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 80px #0005}.login h1{font-size:24px;margin:24px 0 5px}.login p{color:var(--muted);font-size:13px;margin:0 0 22px}.login label{display:block;color:#bac6d6;font-size:11px;margin:14px 0 6px}.login input{width:100%}.login .btn{width:100%;margin-top:20px}.login-error{color:#fda4af;font-size:12px;margin-top:12px;min-height:18px}
+@media(max-width:1050px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.columns{grid-template-columns:1fr}}
+@media(max-width:700px){.shell{grid-template-columns:1fr}.sidebar{position:sticky;top:0;z-index:5;padding:10px 12px;gap:10px;border-right:0;border-bottom:1px solid var(--line)}.brand{padding:0 4px}.brand .mark{width:32px;height:32px}.brand strong{font-size:15px}.nav-label,.sidebar-bottom{display:none}.nav{display:flex;overflow:auto;gap:5px}.nav button{white-space:nowrap;padding:9px 10px;font-size:11px}.nav .ico{width:auto}.topbar{height:56px}.content{padding-top:22px}.grid{gap:9px}.card{padding:14px}.metric-value{font-size:24px}.metric-top{font-size:10px}.metric-foot{font-size:10px}}
+@media(max-width:390px){.grid{grid-template-columns:1fr 1fr}.metric-value{font-size:21px}}
+</style>
+</head>
+<body>
+
+<section id="loginScreen" class="login-wrap">
+  <form id="loginForm" class="login">
+    <div class="brand"><span class="mark">M</span><span><strong>MZIGO</strong><small>COMMAND CENTRE</small></span></div>
+    <h1>Administrator sign in</h1>
+    <p>Use your existing Mzigo account credentials. Your account must be explicitly allowlisted for administrator access.</p>
+    <label for="phone">Phone number</label>
+    <input class="field" id="phone" name="phone" autocomplete="username" required placeholder="097XXXXXXXX">
+    <label for="password">Password</label>
+    <input class="field" id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="btn primary" id="loginButton" type="submit">Sign in securely</button>
+    <div class="login-error" id="loginError" role="alert"></div>
+  </form>
+</section>
+
+<div id="app" class="shell hidden">
+  <aside class="sidebar">
+    <div class="brand"><span class="mark">M</span><span><strong>MZIGO</strong><small>COMMAND CENTRE</small></span></div>
+    <div class="nav-label">WORKSPACE</div>
+    <nav class="nav" aria-label="Main navigation">
+      <button class="active" data-page="overview"><span class="ico">▦</span>Overview</button>
+      <button data-page="fleet"><span class="ico">▰</span>Fleet</button>
+      <button data-page="bookings"><span class="ico">▤</span>Bookings</button>
+      <button data-page="alerts"><span class="ico">⚑</span>Alerts</button>
+    </nav>
+    <div class="sidebar-bottom">MZIGO LOGISTICS · ZAMBIA<br>Enterprise operations</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb">Operations / <strong id="crumb">Overview</strong></div>
+      <div class="topright">
+        <span class="pill">SECURE SESSION</span>
+        <span id="adminName" class="muted"></span>
+        <span class="avatar" id="avatar">M</span>
+        <button class="btn" id="logoutButton">Sign out</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">MZIGO LOGISTICS · ZAMBIA</div>
+          <h1 id="pageTitle">Executive overview</h1>
+          <p class="sub" id="pageSubtitle">A live view of your logistics operation.</p>
+        </div>
+        <button class="btn primary" id="refreshButton">↻ Refresh data</button>
+      </div>
+
+      <div id="globalNotice" class="notice hidden"></div>
+
+      <section id="overviewPage">
+        <div class="grid" id="metrics">
+          <div class="card">Loading operational metrics…</div>
+        </div>
+        <div class="columns">
+          <div class="card">
+            <h2>Fleet availability</h2>
+            <p class="hint">Current records in the Mzigo fleet database</p>
+            <div id="fleetBars"></div>
+          </div>
+          <div class="card">
+            <h2>Booking pipeline</h2>
+            <p class="hint">Booking records by operational status</p>
+            <div id="bookingBars"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <h2>Data integrity note</h2>
+          <p class="hint" id="dataNote">Metrics are calculated from stored Mzigo records. No synthetic activity is added.</p>
+        </div>
+      </section>
+
+      <section id="fleetPage" class="hidden">
+        <div class="toolbar">
+          <input class="field" id="fleetSearch" placeholder="Search vehicle, owner or corridor">
+          <select class="field" id="fleetFilter">
+            <option value="all">All vehicles</option>
+            <option value="active">Active listings</option>
+            <option value="inactive">Inactive listings</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Vehicle</th><th>Owner</th><th>Corridor</th><th>Capacity</th><th>Available</th><th>Status</th></tr>
+            </thead>
+            <tbody id="fleetRows">
+              <tr><td colspan="6" class="empty">Loading fleet…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="bookingsPage" class="hidden">
+        <div class="toolbar">
+          <input class="field" id="bookingSearch" placeholder="Search booking, trader or route">
+          <select class="field" id="bookingFilter">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Booking</th><th>Trader</th><th>Route</th><th>Vehicle</th><th>Quantity</th><th>Payment</th><th>Status</th></tr>
+            </thead>
+            <tbody id="bookingRows">
+              <tr><td colspan="7" class="empty">Loading bookings…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="alertsPage" class="hidden">
+        <div class="card">
+          <h2>Operational queue</h2>
+          <p class="hint">Actionable items derived from existing pending booking records.</p>
+          <div id="alertList">Loading alerts…</div>
+        </div>
+        <div class="notice" style="margin-top:14px">
+          GPS telemetry, payment exceptions and security incidents are not yet stored in the current backend schema. They are intentionally not represented as live alerts.
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+const TOKEN_KEY = "mzigo_admin_token";
+let token = sessionStorage.getItem(TOKEN_KEY) || "";
+let currentPage = "overview";
+let overviewData = null;
+let fleetData = [];
+let bookingData = [];
+let alertData = [];
+
+const $ = (id) => document.getElementById(id);
+
+const esc = (value) => String(value ?? "").replace(/[&<>"']/g, c => ({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+}[c]));
+
+const money = (value) => "K " + Number(value || 0).toLocaleString("en-ZM", {
+  maximumFractionDigits:2
+});
+
+const statusClass = (value) => String(value || "")
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g,"-");
+
+function showLogin(message="") {
+  $("app").classList.add("hidden");
+  $("loginScreen").classList.remove("hidden");
+  $("loginError").textContent=message;
+}
+
+function showApp(user) {
+  $("loginScreen").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("adminName").textContent=user.full_name || "Administrator";
+  $("avatar").textContent=(user.full_name || "M").trim().charAt(0).toUpperCase();
+}
+
+function setNotice(message) {
+  const n=$("globalNotice");
+  n.textContent=message || "";
+  n.classList.toggle("hidden",!message);
+}
+
+async function request(path, options={}) {
+  const headers = new Headers(options.headers || {});
+  headers.set("Accept","application/json");
+
+  if(token) headers.set("Authorization","Bearer "+token);
+  if(options.body) headers.set("Content-Type","application/json");
+
+  const response = await fetch(path,{...options,headers});
+  const payload = await response.json().catch(()=>({
+    detail:"Unexpected server response."
+  }));
+
+  if(!response.ok) {
+    if(response.status===401) {
+      token="";
+      sessionStorage.removeItem(TOKEN_KEY);
+      showLogin("Your session expired. Please sign in again.");
+    }
+    throw new Error(payload.detail || "Request failed ("+response.status+").");
+  }
+
+  return payload;
+}
+
+async function authenticate() {
+  if(!token) return false;
+
+  try {
+    const user=await request("/api/admin/me");
+    showApp(user);
+    await loadAll();
+    return true;
+  } catch(error) {
+    if(token) {
+      token="";
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+    showLogin(error.message);
+    return false;
+  }
+}
+
+$("loginForm").addEventListener("submit",async event=>{
+  event.preventDefault();
+
+  const button=$("loginButton");
+  button.disabled=true;
+  button.textContent="Signing in…";
+  $("loginError").textContent="";
+
+  try {
+    const response=await fetch("/api/auth/login",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Accept":"application/json"
+      },
+      body:JSON.stringify({
+        phone:$("phone").value.trim(),
+        password:$("password").value
+      })
+    });
+
+    const data=await response.json().catch(()=>({
+      detail:"Unexpected server response."
+    }));
+
+    if(!response.ok) throw new Error(data.detail || "Sign-in failed.");
+
+    token=data.access_token;
+    sessionStorage.setItem(TOKEN_KEY,token);
+
+    const user=await request("/api/admin/me");
+    showApp(user);
+    await loadAll();
+
+  } catch(error) {
+    token="";
+    sessionStorage.removeItem(TOKEN_KEY);
+    $("loginError").textContent=error.message;
+
+  } finally {
+    button.disabled=false;
+    button.textContent="Sign in securely";
+  }
+});
+
+$("logoutButton").addEventListener("click",async()=>{
+  try {
+    if(token) await request("/api/auth/logout",{method:"POST"});
+  } catch(_) {}
+
+  token="";
+  sessionStorage.removeItem(TOKEN_KEY);
+  showLogin();
+});
+
+function navigate(page) {
+  currentPage=page;
+
+  document.querySelectorAll("[data-page]").forEach(b=>{
+    b.classList.toggle("active",b.dataset.page===page);
+  });
+
+  ["overview","fleet","bookings","alerts"].forEach(p=>{
+    $(p+"Page").classList.toggle("hidden",p!==page);
+  });
+
+  const titles={
+    overview:["Executive overview","A live view of your logistics operation."],
+    fleet:["Fleet management","Vehicle listings and available carrying capacity."],
+    bookings:["Freight bookings","Bookings recorded by traders and carriers."],
+    alerts:["Operational alerts","Items requiring administrative attention."]
+  };
+
+  $("crumb").textContent=titles[page][0];
+  $("pageTitle").textContent=titles[page][0];
+  $("pageSubtitle").textContent=titles[page][1];
+
+  if(page==="fleet") renderFleet();
+  if(page==="bookings") renderBookings();
+  if(page==="alerts") renderAlerts();
+}
+
+document.querySelectorAll("[data-page]").forEach(b=>{
+  b.addEventListener("click",()=>navigate(b.dataset.page));
+});
+
+function metric(label,value,icon,foot="From database") {
+  return `<article class="card">
+    <div class="metric-top">
+      <span>${esc(label)}</span>
+      <span class="metric-icon">${icon}</span>
+    </div>
+    <div class="metric-value">${esc(value)}</div>
+    <div class="metric-foot">${esc(foot)}</div>
+  </article>`;
+}
+
+function bar(label,value,max,klass="") {
+  const width=max ? Math.max(0,Math.min(100,(value/max)*100)) : 0;
+
+  return `<div class="bar-row">
+    <span>${esc(label)}</span>
+    <div class="track">
+      <div class="fill ${klass}" style="width:${width}%"></div>
+    </div>
+    <strong>${esc(value)}</strong>
+  </div>`;
+}
+
+function renderOverview() {
+  if(!overviewData) return;
+
+  const d=overviewData;
+  const u=d.users;
+  const f=d.fleet;
+  const b=d.bookings;
+
+  $("metrics").innerHTML=[
+    metric("Registered users",u.total,"♙",
+      `${u.traders} traders · ${u.fleet_owners} fleet owners`),
+    metric("Active fleet listings",f.active,"▰",
+      `${f.available} with available capacity`),
+    metric("Total bookings",b.total,"▤",
+      `${b.pending} pending · ${b.delivered} delivered`),
+    metric("Available capacity",
+      Number(f.available_capacity_tonnes).toLocaleString()+" t",
+      "⇄","Tonnes across active listings")
+  ].join("");
+
+  const maxFleet=Math.max(f.total,1);
+
+  $("fleetBars").innerHTML=
+    bar("Active listings",f.active,maxFleet,"green")+
+    bar("Available trucks",f.available,maxFleet,"blue")+
+    bar("Inactive listings",Math.max(0,f.total-f.active),maxFleet,"red");
+
+  const maxBookings=Math.max(b.total,1);
+
+  $("bookingBars").innerHTML=
+    bar("Pending",b.pending,maxBookings)+
+    bar("Delivered",b.delivered,maxBookings,"green")+
+    bar("Other statuses",Math.max(0,b.total-b.pending-b.delivered),maxBookings,"blue");
+
+  $("dataNote").textContent=
+    `Snapshot generated ${new Date(d.generated_at).toLocaleString()}. Listed truck price aggregate: ${money(d.listed_truck_price_total_zmw)}. This is not revenue or settled payments.`;
+}
+
+function renderFleet() {
+  const q=$("fleetSearch").value.trim().toLowerCase();
+
+  const rows=fleetData.filter(x=>
+    [x.id,x.owner_name,x.origin,x.destination,x.truck_type]
+      .join(" ").toLowerCase().includes(q)
+  );
+
+  $("fleetRows").innerHTML=rows.length
+    ? rows.map(x=>`<tr>
+        <td><strong>#${esc(x.id)} · ${esc(x.truck_type)}</strong><br>
+          <span class="muted">${esc(x.departure_date||"No departure date")}</span>
+        </td>
+        <td>${esc(x.owner_name)}</td>
+        <td>${esc(x.origin)} → ${esc(x.destination)}</td>
+        <td>${esc(x.capacity_tonnes)} t</td>
+        <td>${esc(x.available_tonnes)} t</td>
+        <td><span class="status ${statusClass(x.status)}">${esc(x.status)}</span></td>
+      </tr>`).join("")
+    : `<tr><td colspan="6" class="empty">No matching fleet records.</td></tr>`;
+}
+
+function renderBookings() {
+ 
