@@ -1157,9 +1157,30 @@ def startup_event():
         APP_VERSION,
         APP_ENV,
     )
-    logger.info(
-        "%s version %s is starting in %s mode.",
-        APP_NAME,
-        APP_VERSION,
-        APP_ENV,
+    
+# ============================================================
+# MZIGO COMMAND CENTRE — ADMIN INTEGRATION
+# ============================================================
+
+from admin_routes import create_admin_router
+
+app.include_router(
+    create_admin_router(
+        User=User,
+        Truck=Truck,
+        Booking=Booking,
+        get_db=get_db,
+        get_current_user=get_current_user,
     )
+)
+
+
+@app.get("/admin", include_in_schema=False)
+def admin_dashboard():
+    return FileResponse(
+        os.path.join(
+            os.path.dirname(__file__),
+            "admin.html"
+        )
+    )
+
