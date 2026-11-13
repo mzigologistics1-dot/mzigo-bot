@@ -1149,15 +1149,14 @@ def estimate_price(payload: EstimateRequest):
 
 @app.on_event("startup")
 def startup_event():
-@app.on_event("startup")
-def startup_event():
     logger.info(
         "%s version %s is starting in %s mode.",
         APP_NAME,
         APP_VERSION,
         APP_ENV,
     )
-    
+
+
 # ============================================================
 # MZIGO COMMAND CENTRE — ADMIN INTEGRATION
 # ============================================================
@@ -1183,4 +1182,9 @@ def admin_dashboard():
             "admin.html"
         )
     )
+
+
+
+
+    
 
